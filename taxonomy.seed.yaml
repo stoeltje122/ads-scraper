@@ -1,0 +1,59 @@
+# Seed-taxonomie voor `adscout init`. Daarna volledig te beheren via
+# CLI (`adscout category ...`) of dashboard (Beheer → Categorieën).
+# type: advertiser_category (voor merken) of ad_tag (multi-select per ad).
+# group: alleen voor ad_tags — bepaalt de sectie in de UI.
+
+advertiser_categories:
+  - name: supplement
+    description: "Supplementmerken — directe concurrenten."
+  - name: sleep-comfort
+    description: "Slaapcomfort (kussens, dekbedden) — geen supplement, wel leerzame slaap-adverteerders."
+  - name: wellness
+    description: "Breder wellness/lifestyle."
+  - name: beauty
+    description: "Beauty / verzorging."
+  - name: unknown
+    description: "Nog te verifiëren."
+
+ad_tags:
+  # Hook-type
+  - {group: hook, name: "hook: probleem/pijnpunt", description: "Opent met het probleem (slecht slapen, wakker liggen)."}
+  - {group: hook, name: "hook: vraag", description: "Opent met een vraag aan de kijker."}
+  - {group: hook, name: "hook: statistiek/feit", description: "Opent met een cijfer of feit."}
+  - {group: hook, name: "hook: testimonial/UGC", description: "Klantverhaal of user-generated content als opening."}
+  - {group: hook, name: "hook: founder-story", description: "Verhaal van de oprichter(s)."}
+  - {group: hook, name: "hook: autoriteit/expert", description: "Expert, arts of onderzoek als opening."}
+  - {group: hook, name: "hook: humor", description: "Humoristische insteek."}
+  - {group: hook, name: "hook: aanbieding-first", description: "Opent direct met de aanbieding."}
+
+  # Offer
+  - {group: offer, name: "offer: korting-%", description: "Procentuele korting."}
+  - {group: offer, name: "offer: bundel", description: "Bundelaanbieding (2+1, multipack)."}
+  - {group: offer, name: "offer: gratis verzending", description: "Gratis verzending als offer."}
+  - {group: offer, name: "offer: proefperiode/geld-terug", description: "Probeer-garantie of geld-terug."}
+  - {group: offer, name: "offer: cadeau-bij-aankoop", description: "Gratis cadeau bij aankoop."}
+  - {group: offer, name: "offer: geen (brand)", description: "Geen expliciete aanbieding — merkcampagne."}
+
+  # Format-detail
+  - {group: format, name: "format: statisch beeld", description: "Enkel statisch beeld."}
+  - {group: format, name: "format: video", description: "Video-advertentie."}
+  - {group: format, name: "format: carrousel", description: "Meerdere kaarten."}
+  - {group: format, name: "format: UGC-video", description: "Video in UGC-stijl (selfie, review)."}
+  - {group: format, name: "format: tekstzwaar statisch", description: "Statisch beeld met veel tekst."}
+
+  # Angle/thema
+  - {group: angle, name: "angle: inslapen", description: "Sneller in slaap vallen."}
+  - {group: angle, name: "angle: doorslapen", description: "Doorslapen / niet wakker worden."}
+  - {group: angle, name: "angle: herstel", description: "Herstel en uitgerust wakker worden."}
+  - {group: angle, name: "angle: stress/onrust", description: "Stress, piekeren, onrust."}
+  - {group: angle, name: "angle: hormonen/overgang", description: "Hormonen, overgang, 40+ levensfase."}
+  - {group: angle, name: "angle: natuurlijk/zonder-melatonine", description: "Natuurlijke formule, bewust zonder melatonine."}
+  - {group: angle, name: "angle: snurken/partner", description: "Snurken of slaap van de partner."}
+  - {group: angle, name: "angle: energie overdag", description: "Meer energie overdag door beter slapen."}
+
+  # Doelgroep-signaal
+  - {group: audience, name: "doelgroep: vrouwen", description: "Richt zich expliciet op vrouwen."}
+  - {group: audience, name: "doelgroep: 40+", description: "Richt zich op 40-plussers."}
+  - {group: audience, name: "doelgroep: sporters", description: "Richt zich op sporters."}
+  - {group: audience, name: "doelgroep: ouders", description: "Richt zich op ouders."}
+  - {group: audience, name: "doelgroep: senioren", description: "Richt zich op senioren."}

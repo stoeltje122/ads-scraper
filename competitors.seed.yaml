@@ -1,0 +1,54 @@
+# Seed-watchlist voor `adscout init`. Alleen gebruikt bij eerste initialisatie;
+# daarna beheer je concurrenten via CLI (`adscout advertiser ...`) of dashboard.
+#
+# page_ids staan bewust leeg: pagina's worden NOOIT gegokt.
+# Gebruik `adscout resolve "<naam>"` en bevestig zelf de juiste pagina.
+#
+# category verwijst naar een advertiser_category (zie taxonomy.seed.yaml).
+# Categorieën met "(verifiëren)" in de notities zijn onze inschatting.
+
+advertisers:
+  - name: Cloudpillo
+    category: sleep-comfort
+    countries: [NL]
+    notes: "NL-merk, verstelbare kussens/beddengoed. Grote adverteerder, veel te leren qua funnels."
+
+  - name: Zelesta
+    category: sleep-comfort
+    countries: [NL]
+    notes: "NL-merk, dekbedden."
+
+  - name: 8hours
+    category: supplement
+    countries: [NL]
+    notes: "Vermoedelijk slaapgerelateerd supplement — categorie verifiëren bij resolve."
+
+  - name: Cabau
+    category: wellness
+    countries: [NL]
+    notes: "Waarschijnlijk 'Cabau Lifestyle'. Pagina en categorie verifiëren."
+
+  - name: Evidaplus
+    category: supplement
+    countries: [NL]
+    notes: "Categorie verifiëren bij resolve."
+
+  - name: "Doré & Rosé"
+    category: beauty
+    countries: [NL]
+    notes: "Spelling en pagina verifiëren — mogelijk andere schrijfwijze."
+
+  - name: Ella
+    category: unknown
+    countries: [NL]
+    notes: "LET OP: generieke naam, meerdere pagina's mogelijk. Nooit gokken — kandidaten via resolve voorleggen."
+
+  - name: Elvou
+    category: unknown
+    countries: [NL]
+    notes: "Categorie en pagina verifiëren."
+
+  - name: Oana
+    category: unknown
+    countries: [NL]
+    notes: "LET OP: generieke naam. Nooit gokken — kandidaten via resolve voorleggen."

@@ -1,0 +1,4 @@
+# Optional: only needed for AI tag suggestions (ANTHROPIC_API_KEY in .env).
+# AdScout works fully without this.
+-r requirements.txt
+anthropic>=0.40,<1.0

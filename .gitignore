@@ -1,0 +1,18 @@
+# Secrets — never commit
+.env
+
+# Local data (database, downloaded creatives, reports, exports, logs)
+data/
+reports/
+exports/
+logs/
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+build/
+dist/
