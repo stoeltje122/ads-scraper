@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_chip, runtime_badge %}
+{% block title %}Ad {{ ad['ad_archive_id'] }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Ad van <a href="/advertiser/{{ ad['advertiser_id'] }}">{{ ad['advertiser_name'] }}</a></h1>
+  {{ status_chip(ad['status']) }}
+  {{ runtime_badge(ad['runtime_days']) }}
+</div>
+
+<p class="source-links">
+  <a class="btn btn-primary" href="{{ ad_library_url(ad['ad_archive_id']) }}" target="_blank" rel="noopener">Bekijk in de Meta Ad Library ↗</a>
+  {% if ad['snapshot_url'] %}
+  <a class="btn" href="{{ ad['snapshot_url'] }}" target="_blank" rel="noopener">Snapshot ↗</a> <span class="muted">(directe render-link, kan verlopen)</span>
+  {% endif %}
+</p>
+
+<div class="detail-grid">
+  <section class="panel">
+    <h2>Kerngegevens</h2>
+    <dl class="kv">
+      <dt>Ad Library ID</dt><dd><code>{{ ad['ad_archive_id'] }}</code></dd>
+      <dt>Format</dt><dd>{{ format_label(ad['format']) }}</dd>
+      <dt>Gestart</dt><dd>{{ ad['ad_delivery_start']|day or '—' }}</dd>
+      <dt>Gestopt</dt><dd>{{ ad['ad_delivery_stop']|day or ('—' if ad['status'] == 'active' else 'onbekend (verdwenen op ' + ad['last_seen'] + ')') }}</dd>
+      <dt>Eerst gezien</dt><dd>{{ ad['first_seen'] }}</dd>
+      <dt>Laatst gezien</dt><dd>{{ ad['last_seen'] }}</dd>
+      <dt>EU-bereik (laatst bekend)</dt><dd>{{ ad['eu_reach_latest']|nlnum }}</dd>
+      <dt>Platforms</dt><dd>{{ ad['platforms']|fromjson|join(', ') or '—' }}</dd>
+      <dt>Talen</dt><dd>{{ ad['languages']|fromjson|join(', ') or '—' }}</dd>
+      <dt>Landen (waargenomen)</dt><dd>{{ ad['countries']|fromjson|join(', ') or '—' }}</dd>
+      <dt>Landing-hint</dt><dd>{{ ad['landing_url'] or '—' }}</dd>
+    </dl>
+  </section>
+
+  <section class="panel">
+    <h2>Creatives</h2>
+    {% if creatives %}
+    <div class="creative-list">
+      {% for c in creatives %}
+        {% if c['media_type'] == 'video' %}
+        <figure class="creative">
+          {% if video_thumb %}<img src="{{ video_thumb }}" alt="Video-thumbnail">{% endif %}
+          <figcaption>
+            Video —
+            {% if c['url'] %}
+            <a href="{{ c['url'] }}" target="_blank" rel="noopener">bekijk lokale video</a>
+            {% else %}
+            niet lokaal opgeslagen; <a href="{{ ad_library_url(ad['ad_archive_id']) }}" target="_blank" rel="noopener">bekijk via de Ad Library ↗</a>
+            {% endif %}
+          </figcaption>
+        </figure>
+        {% elif c['media_type'] == 'video_thumbnail' %}
+          {% if not has_video and c['url'] %}
+          <figure class="creative"><img src="{{ c['url'] }}" alt="Video-thumbnail"><figcaption>Video-thumbnail</figcaption></figure>
+          {% endif %}
+        {% else %}
+        <figure class="creative">
+          {% if c['url'] %}
+          <img src="{{ c['url'] }}" alt="Creative van {{ ad['advertiser_name'] }}">
+          {% else %}
+          <div class="thumb-placeholder creative-missing"><span>Beeld niet lokaal opgeslagen — <a href="{{ ad_library_url(ad['ad_archive_id']) }}" target="_blank" rel="noopener">bekijk via de Ad Library ↗</a></span></div>
+          {% endif %}
+        </figure>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="muted">Geen creatives opgeslagen voor deze ad. Gebruik de Ad Library-link hierboven.</p>
+    {% endif %}
+    {% if shared_ads %}
+    <h3>Zelfde creative als</h3>
+    <ul class="plain-list">
+      {% for s in shared_ads %}
+      <li><a href="/ad/{{ s['ad_archive_id'] }}">{{ s['advertiser_name'] }} — {{ s['ad_archive_id'] }}</a></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </section>
+</div>
+
+<section class="panel">
+  <h2>Tekstvarianten <span class="count">({{ texts|length }})</span></h2>
+  {% if texts %}
+  {% for t in texts %}
+  <article class="text-variant">
+    <h3>Variant {{ t['variant_index'] + 1 }}</h3>
+    {% if t['title'] %}<p class="variant-title">{{ t['title'] }}</p>{% endif %}
+    {% if t['body'] %}<pre class="variant-body">{{ t['body'] }}</pre>{% endif %}
+    {% if t['caption'] %}<p class="muted">Caption: {{ t['caption'] }}</p>{% endif %}
+    {% if t['description'] %}<p class="muted">Beschrijving: {{ t['description'] }}</p>{% endif %}
+  </article>
+  {% endfor %}
+  {% else %}
+  <p class="muted">Geen tekst bekend voor deze ad.</p>
+  {% endif %}
+</section>
+
+<div class="detail-grid">
+  <section class="panel">
+    <h2>Tags</h2>
+    {% if suggested %}
+    <h3>AI-suggesties</h3>
+    <ul class="suggestion-list">
+      {% for s in suggested %}
+      <li>
+        <span class="tag tag-suggested">{{ s['name'] }}</span>
+        <span class="muted">[{{ s['tag_group'] or 'overig' }}]{% if s['confidence'] is not none %} · {{ (s['confidence'] * 100)|round|int }}%{% endif %}</span>
+        <form method="post" action="/ad/{{ ad['ad_archive_id'] }}/suggestion" class="inline-form">
+          <input type="hidden" name="category_id" value="{{ s['category_id'] }}">
+          <button class="btn btn-small btn-accept" name="decision" value="accept">Accepteer</button>
+          <button class="btn btn-small btn-reject" name="decision" value="reject">Weiger</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    <h3>Geaccepteerde tags bewerken</h3>
+    <form method="post" action="/ad/{{ ad['ad_archive_id'] }}/tags" class="tag-form">
+      {% for group, tags in tag_groups.items() %}
+      <fieldset>
+        <legend>{{ group }}</legend>
+        {% for tag in tags %}
+        <label class="checkbox">
+          <input type="checkbox" name="tag" value="{{ tag['id'] }}" {{ 'checked' if tag['id'] in accepted_ids else '' }}>
+          {{ tag['name'] }}
+        </label>
+        {% endfor %}
+      </fieldset>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary">Tags opslaan</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Waarnemingen <span class="count">({{ sightings|length }})</span></h2>
+    {% if sightings %}
+    <table class="table">
+      <thead><tr><th>Datum</th><th>Status</th><th>EU-bereik</th></tr></thead>
+      <tbody>
+      {% for s in sightings %}
+      <tr>
+        <td>{{ s['seen_at'] }}</td>
+        <td>{{ status_chip(s['status']) }}</td>
+        <td>{{ s['eu_reach']|nlnum }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">Nog geen waarnemingen vastgelegd.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

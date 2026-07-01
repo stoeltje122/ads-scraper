@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% from "_macros.html" import ad_card, status_chip, runtime_badge %}
+{% block title %}{{ adv['name'] }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ adv['name'] }}</h1>
+  {% if adv['status'] == 'active' %}
+  <span class="chip chip-active">Op de watchlist</span>
+  {% else %}
+  <span class="chip chip-stopped">Gepauzeerd</span>
+  {% endif %}
+</div>
+
+<div class="detail-grid">
+  <section class="panel">
+    <h2>Profiel</h2>
+    <dl class="kv">
+      <dt>Categorie</dt><dd>{{ adv['category'] or '—' }}</dd>
+      <dt>Landen</dt><dd>{{ adv['countries'] or '—' }}</dd>
+      <dt>Actief / totaal</dt><dd>{{ active_ads|length }} actief · {{ active_ads|length + stopped_ads|length }} totaal bekend</dd>
+      {% if adv['notes'] %}<dt>Notities</dt><dd>{{ adv['notes'] }}</dd>{% endif %}
+    </dl>
+    <h3>Gekoppelde pagina's</h3>
+    {% if pages %}
+    <ul class="plain-list">
+      {% for p in pages %}
+      <li><code>{{ p['page_id'] }}</code> {{ p['page_name'] or '' }}</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">Nog geen pagina's gekoppeld — draai <code>adscout resolve "{{ adv['name'] }}"</code>.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Actieve ads per dag <span class="muted">(laatste 90 dagen)</span></h2>
+    {% if chart_svg %}
+    <div class="chart-wrap">{{ chart_svg | safe }}</div>
+    {% else %}
+    <p class="muted">Nog geen snapshot-historie — die groeit vanzelf met elke <code>adscout collect</code>.</p>
+    {% endif %}
+  </section>
+</div>
+
+{% if top_runners %}
+<section>
+  <h2>Langstlopers van dit merk</h2>
+  <table class="table">
+    <thead><tr><th>#</th><th>Looptijd</th><th>Format</th><th>Gestart</th><th>Ad</th></tr></thead>
+    <tbody>
+    {% for ad in top_runners %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ runtime_badge(ad['runtime_days']) }}</td>
+      <td>{{ format_label(ad['format']) }}</td>
+      <td>{{ ad['ad_delivery_start']|day or '—' }}</td>
+      <td><a href="/ad/{{ ad['ad_archive_id'] }}">{{ (ad['first_body'] or ad['ad_archive_id'])[:80] }}</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
+<section>
+  <h2>Actieve ads <span class="count">({{ active_ads|length }})</span></h2>
+  {% if active_ads %}
+  <div class="cards">
+    {% for ad in active_ads %}
+    {{ ad_card(ad, tags_map.get(ad['ad_archive_id'], [])) }}
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="empty">Geen actieve ads bekend.</p>
+  {% endif %}
+</section>
+
+<section>
+  <h2>Gestopte ads <span class="count">({{ stopped_ads|length }})</span></h2>
+  {% if stopped_ads %}
+  <div class="cards">
+    {% for ad in stopped_ads %}
+    {{ ad_card(ad, tags_map.get(ad['ad_archive_id'], []), show_stop=True) }}
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="empty">Geen gestopte ads bekend.</p>
+  {% endif %}
+</section>
+{% endblock %}

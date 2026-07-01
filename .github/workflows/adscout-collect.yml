@@ -1,0 +1,72 @@
+# AdScout dagelijkse verzamel-run op GitHub Actions.
+# LET OP: alleen gebruiken op een PRIVE repository — de workflow commit de
+# SQLite-database met concurrentiedata terug naar de repo.
+# Setup-instructies: README.md, sectie "Dagelijkse run instellen".
+name: AdScout daily collect
+
+on:
+  schedule:
+    # 05:15 UTC = 07:15 NL-zomertijd / 06:15 NL-wintertijd.
+    - cron: '15 5 * * *'
+  workflow_dispatch: {}
+
+# Never run two collects at the same time (SQLite + git push races).
+concurrency:
+  group: adscout-collect
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repo uitchecken
+        uses: actions/checkout@v4
+        with:
+          # Keep the GITHUB_TOKEN so the data commit can be pushed back.
+          persist-credentials: true
+
+      - name: Python installeren
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: AdScout installeren
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Token uit secrets in de omgeving zetten
+        run: echo "META_ACCESS_TOKEN=${{ secrets.META_ACCESS_TOKEN }}" >> "$GITHUB_ENV"
+
+      - name: Dagelijkse collect draaien
+        # A failing collect must not block the data commit: partial results
+        # (and the run record in the `runs` table) are worth keeping.
+        run: |
+          adscout collect || echo "::warning::adscout collect faalde — check 'adscout status' en logs/adscout.log; bestaande data wordt alsnog gecommit."
+
+      - name: Weekrapport (alleen op maandag)
+        run: |
+          if [ "$(date -u +%u)" = "1" ]; then
+            adscout report --weekly
+          else
+            echo "Geen maandag — weekrapport overgeslagen."
+          fi
+
+      - name: Data terug-committen naar de repo
+        # data/ and reports/ are gitignored for local use, hence `git add -f`:
+        # in this workflow the repo itself is the persistent storage, so the
+        # database, creatives and reports must be committed to keep history.
+        run: |
+          git config user.name "adscout-bot"
+          git config user.email "adscout-bot@users.noreply.github.com"
+          git add -f data/ reports/
+          if git diff --cached --quiet; then
+            echo "Geen wijzigingen — niets te committen."
+          else
+            git commit -m "[data] daily collect $(date -u +%F)"
+            git push
+          fi

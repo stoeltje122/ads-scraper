@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}AdScout{% endblock %} · AdScout</title>
+<link rel="stylesheet" href="/static/adscout.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="/">Ad<span>Scout</span></a>
+    <nav class="mainnav">
+      <a href="/" class="{{ 'active' if nav == 'gallery' else '' }}">Galerij</a>
+      <a href="/winners" class="{{ 'active' if nav == 'winners' else '' }}">Winnaars</a>
+      <a href="/changes" class="{{ 'active' if nav == 'changes' else '' }}">Veranderingen</a>
+      <a href="/beheer" class="{{ 'active' if nav == 'beheer' else '' }}">Beheer</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+{% block content %}{% endblock %}
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <p>Creatives zijn auteursrechtelijk eigendom van de betreffende adverteerders — uitsluitend intern gebruik voor analyse, nooit herpubliceren.</p>
+  </div>
+</footer>
+</body>
+</html>

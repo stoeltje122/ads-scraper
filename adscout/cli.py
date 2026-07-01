@@ -54,7 +54,7 @@ def _source(settings: Settings, source: str, fixture_dir: Path) -> AdSource:
 
 @app.callback()
 def _version_callback() -> None:
-    """AdScout v%s.""" % __version__
+    """AdScout — Meta Ads concurrentie-intelligence. Zie README.md voor uitleg."""
 
 
 # ── Kerncommando's ───────────────────────────────────────────────────
@@ -218,7 +218,7 @@ def status() -> None:
 
 @app.command()
 def report(
-    weekly: bool = typer.Option(True, "--weekly", help="Weekrapport (default)."),
+    weekly: bool = typer.Option(True, "--weekly", help="Weekrapport (voorlopig het enige rapporttype)."),
 ) -> None:
     """Weekrapport genereren (Markdown + HTML in reports/)."""
     from adscout.notify import get_notifier
@@ -242,6 +242,9 @@ def export(
     """Volledige data-export — geen lock-in, handig voor eigen analyses."""
     if not csv_out and not json_out:
         csv_out = True
+    if out and csv_out and json_out:
+        typer.secho("--out kan alleen met één formaat tegelijk (--csv óf --json).", fg="red")
+        raise typer.Exit(1)
     settings, conn = _boot()
     rows = queries.export_rows(conn)
     tags_map = queries.accepted_tags_map(conn)
@@ -323,9 +326,9 @@ def verify(
     country: str = typer.Option("NL", help="Land."),
 ) -> None:
     """Fase 0: verifieer wat de Ad Library API echt teruggeeft (of fixture-demo)."""
-    import verify_access
+    from adscout import verify as verify_mod
 
-    raise typer.Exit(verify_access.run(brand=brand, page_id=page_id, country=country))
+    raise typer.Exit(verify_mod.run(brand=brand, page_id=page_id, country=country))
 
 
 # ── Watchlist ────────────────────────────────────────────────────────

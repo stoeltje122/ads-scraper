@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "_macros.html" import ad_card %}
+{% block title %}Veranderingen{% endblock %}
+{% block content %}
+<h1>Veranderingen</h1>
+
+<div class="period-picker">
+  <span>Periode:</span>
+  {% for p in change_periods %}
+  <a class="btn {{ 'btn-primary' if days == p else '' }}" href="/changes?days={{ p }}">{{ p }} dagen</a>
+  {% endfor %}
+  <span class="muted">sinds {{ since }}</span>
+</div>
+
+<section>
+  <h2>Nieuw deze week <span class="count">({{ new_ads|length }})</span></h2>
+  {% if new_ads %}
+  <div class="cards">
+    {% for ad in new_ads %}
+    {{ ad_card(ad, tags_map.get(ad['ad_archive_id'], [])) }}
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="empty">Geen nieuwe ads gezien in de afgelopen {{ days }} dagen.</p>
+  {% endif %}
+</section>
+
+<section>
+  <h2>Gestopt deze week <span class="count">({{ stopped_ads|length }})</span></h2>
+  {% if stopped_ads %}
+  <div class="cards">
+    {% for ad in stopped_ads %}
+    {{ ad_card(ad, tags_map.get(ad['ad_archive_id'], []), show_stop=True) }}
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="empty">Geen gestopte ads gezien in de afgelopen {{ days }} dagen.</p>
+  {% endif %}
+</section>
+{% endblock %}

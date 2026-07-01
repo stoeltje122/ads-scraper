@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_macros.html" import ad_card %}
+{% block title %}Winnaars{% endblock %}
+{% block content %}
+<h1>Winnaars</h1>
+<p class="explain">Langstlopende <strong>actieve</strong> ads van alle concurrenten. Meta geeft geen spend of impressies voor commerciële ads — een lange looptijd is daarom de beste beschikbare proxy voor een winnende ad.</p>
+
+<form method="get" action="/winners" class="filters filters-inline">
+  <label>Categorie
+    <select name="category">
+      <option value="">Alle categorieën</option>
+      {% for cat in adv_categories %}
+      <option value="{{ cat['name'] }}" {{ 'selected' if category == cat['name'] else '' }}>{{ cat['name'] }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit" class="btn btn-primary">Toon</button>
+</form>
+
+{% if winners %}
+<div class="cards">
+  {% for ad in winners %}
+  {{ ad_card(ad, tags_map.get(ad['ad_archive_id'], []), rank=loop.index) }}
+  {% endfor %}
+</div>
+{% else %}
+<p class="empty">Geen actieve ads gevonden{% if category %} in categorie “{{ category }}”{% endif %}.</p>
+{% endif %}
+{% endblock %}

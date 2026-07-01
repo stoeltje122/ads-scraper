@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Beheer{% endblock %}
+{% block content %}
+<h1>Beheer</h1>
+
+<section class="panel">
+  <h2>Watchlist</h2>
+  <table class="table">
+    <thead>
+      <tr><th>Concurrent</th><th>Categorie</th><th>Landen</th><th>Pagina's</th><th>Ads (actief / totaal)</th><th>Status</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for adv in advertisers %}
+    <tr>
+      <td><a href="/advertiser/{{ adv['id'] }}">{{ adv['name'] }}</a>
+        {% if adv['notes'] %}<div class="muted small">{{ adv['notes'] }}</div>{% endif %}
+      </td>
+      <td>{{ adv['category'] or '—' }}</td>
+      <td>{{ adv['countries'] }}</td>
+      <td>
+        {% for p in pages_by_adv[adv['id']] %}
+        <div class="page-row">
+          <code>{{ p['page_id'] }}</code> {{ p['page_name'] or '' }}
+          <form method="post" action="/beheer/page/remove" class="inline-form">
+            <input type="hidden" name="advertiser_id" value="{{ adv['id'] }}">
+            <input type="hidden" name="page_id" value="{{ p['page_id'] }}">
+            <button class="btn btn-small btn-reject" title="Pagina loskoppelen">×</button>
+          </form>
+        </div>
+        {% else %}
+        <span class="muted">geen</span>
+        {% endfor %}
+      </td>
+      <td>{{ adv['n_active_ads'] }} / {{ adv['n_ads'] }}</td>
+      <td>
+        {% if adv['status'] == 'active' %}
+        <span class="chip chip-active">Actief</span>
+        {% else %}
+        <span class="chip chip-stopped">Gepauzeerd</span>
+        {% endif %}
+      </td>
+      <td>
+        <form method="post" action="/beheer/advertiser/{{ adv['id'] }}/status" class="inline-form">
+          {% if adv['status'] == 'active' %}
+          <input type="hidden" name="status" value="paused">
+          <button class="btn btn-small">Pauzeer</button>
+          {% else %}
+          <input type="hidden" name="status" value="active">
+          <button class="btn btn-small">Hervat</button>
+          {% endif %}
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="form-columns">
+    <form method="post" action="/beheer/advertiser/add" class="stack-form">
+      <h3>Concurrent toevoegen</h3>
+      <label>Naam <input type="text" name="name" required></label>
+      <label>Categorie
+        <select name="category">
+          <option value="">—</option>
+          {% for cat in adv_categories %}
+          <option value="{{ cat['name'] }}">{{ cat['name'] }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Landen <input type="text" name="countries" value="NL" placeholder="NL,BE"></label>
+      <label>Notities <input type="text" name="notes"></label>
+      <button type="submit" class="btn btn-primary">Toevoegen</button>
+    </form>
+
+    <form method="post" action="/beheer/page/add" class="stack-form">
+      <h3>Pagina koppelen</h3>
+      <label>Concurrent
+        <select name="advertiser_id" required>
+          {% for adv in advertisers %}
+          <option value="{{ adv['id'] }}">{{ adv['name'] }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Page-ID <input type="text" name="page_id" required></label>
+      <label>Paginanaam <input type="text" name="page_name"></label>
+      <button type="submit" class="btn btn-primary">Koppelen</button>
+      <p class="muted small">Page-ID's vind je via <code>adscout resolve "Merknaam"</code> of in de Ad Library web-UI.</p>
+    </form>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Categorieën &amp; tags</h2>
+  <div class="category-columns">
+    <div>
+      <h3>Concurrent-categorieën</h3>
+      <ul class="category-list">
+        {% for cat in adv_categories %}
+        <li>
+          <span>{{ cat['name'] }}</span>
+          {% if cat['description'] %}<span class="muted small">{{ cat['description'] }}</span>{% endif %}
+          <form method="post" action="/beheer/category/{{ cat['id'] }}/rename" class="inline-form">
+            <input type="text" name="new_name" placeholder="nieuwe naam" required>
+            <button class="btn btn-small">Hernoem</button>
+          </form>
+          <form method="post" action="/beheer/category/{{ cat['id'] }}/delete" class="inline-form"
+                onsubmit="return confirm('Deze concurrent-categorie verwijderen? Deze actie kan niet ongedaan gemaakt worden.');">
+            <button class="btn btn-small btn-reject">Verwijder</button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div>
+      <h3>Ad-tags</h3>
+      {% for group, tags in tag_groups.items() %}
+      <h4 class="tag-group-name">{{ group }}</h4>
+      <ul class="category-list">
+        {% for tag in tags %}
+        <li>
+          <span>{{ tag['name'] }}</span>
+          {% if tag['description'] %}<span class="muted small">{{ tag['description'] }}</span>{% endif %}
+          <form method="post" action="/beheer/category/{{ tag['id'] }}/rename" class="inline-form">
+            <input type="text" name="new_name" placeholder="nieuwe naam" required>
+            <button class="btn btn-small">Hernoem</button>
+          </form>
+          <form method="post" action="/beheer/category/{{ tag['id'] }}/delete" class="inline-form"
+                onsubmit="return confirm('Deze tag verwijderen, inclusief alle tag-koppelingen aan ads? Deze actie kan niet ongedaan gemaakt worden.');">
+            <button class="btn btn-small btn-reject">Verwijder</button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endfor %}
+    </div>
+  </div>
+
+  <form method="post" action="/beheer/category/add" class="stack-form narrow">
+    <h3>Categorie of tag toevoegen</h3>
+    <label>Naam <input type="text" name="name" required></label>
+    <label>Type
+      <select name="type">
+        <option value="ad_tag">ad-tag</option>
+        <option value="advertiser_category">concurrent-categorie</option>
+      </select>
+    </label>
+    <label>Tag-groep <input type="text" name="tag_group" placeholder="hook / offer / format / angle / audience"></label>
+    <label>Beschrijving <input type="text" name="description"></label>
+    <button type="submit" class="btn btn-primary">Toevoegen</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>AI-suggesties <span class="count">({{ suggestions|length }})</span></h2>
+  {% if suggestions %}
+  <table class="table">
+    <thead><tr><th>Ad</th><th>Concurrent</th><th>Voorgestelde tag</th><th>Zekerheid</th><th></th></tr></thead>
+    <tbody>
+    {% for s in suggestions %}
+    <tr>
+      <td><a href="/ad/{{ s['ad_id'] }}">{{ s['ad_id'] }}</a></td>
+      <td>{{ s['advertiser_name'] }}</td>
+      <td><span class="tag tag-suggested">{{ s['tag_name'] }}</span> <span class="muted small">[{{ s['tag_group'] or 'overig' }}]</span></td>
+      <td>{% if s['confidence'] is not none %}{{ (s['confidence'] * 100)|round|int }}%{% else %}—{% endif %}</td>
+      <td>
+        <form method="post" action="/beheer/suggestion" class="inline-form">
+          <input type="hidden" name="ad_id" value="{{ s['ad_id'] }}">
+          <input type="hidden" name="category_id" value="{{ s['category_id'] }}">
+          <button class="btn btn-small btn-accept" name="decision" value="accept">Accepteer</button>
+          <button class="btn btn-small btn-reject" name="decision" value="reject">Weiger</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">Geen wachtende AI-suggesties. Genereer nieuwe met <code>adscout tag suggest</code> (vereist ANTHROPIC_API_KEY in .env).</p>
+  {% endif %}
+</section>
+{% endblock %}

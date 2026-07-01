@@ -21,21 +21,22 @@ def add_advertiser(
     countries: list[str] | None = None,
     notes: str | None = None,
 ) -> int:
-    countries_str = ",".join(countries or ["NL"])
+    """Insert, or update only the fields that were actually provided.
+
+    Deliberately select-then-write instead of INSERT..ON CONFLICT:
+    lastrowid is unreliable on the conflict path, and a re-add must never
+    silently reset fields (like countries) that weren't passed.
+    """
+    existing = conn.execute("SELECT id FROM advertisers WHERE name = ?", (name,)).fetchone()
+    if existing:
+        update_advertiser(conn, existing["id"], category=category, countries=countries, notes=notes)
+        return existing["id"]
     cur = conn.execute(
-        """INSERT INTO advertisers (name, category, countries, notes)
-           VALUES (?, ?, ?, ?)
-           ON CONFLICT(name) DO UPDATE SET
-             category = COALESCE(excluded.category, category),
-             countries = excluded.countries,
-             notes = COALESCE(excluded.notes, notes)""",
-        (name, category, countries_str, notes),
+        "INSERT INTO advertisers (name, category, countries, notes) VALUES (?, ?, ?, ?)",
+        (name, category, ",".join(countries or ["NL"]), notes),
     )
     conn.commit()
-    if cur.lastrowid:
-        return cur.lastrowid
-    row = conn.execute("SELECT id FROM advertisers WHERE name = ?", (name,)).fetchone()
-    return row["id"]
+    return cur.lastrowid
 
 
 def get_advertiser(conn: sqlite3.Connection, name_or_id: str) -> sqlite3.Row | None:
@@ -129,21 +130,24 @@ def add_category(
     description: str | None = None,
 ) -> int:
     assert type_ in ("advertiser_category", "ad_tag")
+    existing = conn.execute(
+        "SELECT id FROM categories WHERE name = ? AND type = ?", (name, type_)
+    ).fetchone()
+    if existing:
+        conn.execute(
+            """UPDATE categories SET tag_group = COALESCE(?, tag_group),
+                                     description = COALESCE(?, description)
+               WHERE id = ?""",
+            (tag_group, description, existing["id"]),
+        )
+        conn.commit()
+        return existing["id"]
     cur = conn.execute(
-        """INSERT INTO categories (name, type, tag_group, description)
-           VALUES (?, ?, ?, ?)
-           ON CONFLICT(name, type) DO UPDATE SET
-             tag_group = COALESCE(excluded.tag_group, tag_group),
-             description = COALESCE(excluded.description, description)""",
+        "INSERT INTO categories (name, type, tag_group, description) VALUES (?, ?, ?, ?)",
         (name, type_, tag_group, description),
     )
     conn.commit()
-    if cur.lastrowid:
-        return cur.lastrowid
-    row = conn.execute(
-        "SELECT id FROM categories WHERE name = ? AND type = ?", (name, type_)
-    ).fetchone()
-    return row["id"]
+    return cur.lastrowid
 
 
 def list_categories(conn: sqlite3.Connection, type_: str | None = None) -> list[sqlite3.Row]:

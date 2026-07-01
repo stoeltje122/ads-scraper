@@ -11,10 +11,11 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import date, timedelta
 
-# SQL fragment implementing the runtime metric (in days).
+# SQL fragment implementing the runtime metric (in days), clamped at 0
+# like models.runtime_days.
 RUNTIME_SQL = (
-    "CAST(julianday(COALESCE(substr(ads.ad_delivery_stop, 1, 10), ads.last_seen)) "
-    "- julianday(substr(ads.ad_delivery_start, 1, 10)) AS INTEGER)"
+    "CAST(MAX(julianday(COALESCE(substr(ads.ad_delivery_stop, 1, 10), ads.last_seen)) "
+    "- julianday(substr(ads.ad_delivery_start, 1, 10)), 0) AS INTEGER)"
 )
 
 # The day an ad (effectively) stopped: explicit stop date, else last sighting.
@@ -60,7 +61,7 @@ _SORTS = {
 }
 
 
-def query_ads(conn: sqlite3.Connection, f: AdFilter) -> list[sqlite3.Row]:
+def _build_where(f: AdFilter) -> tuple[list[str], list]:
     where: list[str] = []
     params: list = []
     if f.advertiser_id:
@@ -103,23 +104,28 @@ def query_ads(conn: sqlite3.Connection, f: AdFilter) -> list[sqlite3.Row]:
         )
         like = f"%{f.search}%"
         params.extend([like, like])
+    # "recent gestopt" without an explicit status filter implies stopped ads.
+    if f.sort == "recently_stopped" and not f.status:
+        where.append("ads.status = 'inactive'")
+    return where, params
 
+
+def query_ads(conn: sqlite3.Connection, f: AdFilter) -> list[sqlite3.Row]:
+    where, params = _build_where(f)
     sql = _BASE_SELECT
     if where:
         sql += " WHERE " + " AND ".join(where)
-    if f.sort == "recently_stopped" and not f.status:
-        sql += (" AND" if where else " WHERE") + " ads.status = 'inactive'"
     sql += f" ORDER BY {_SORTS.get(f.sort, _SORTS['newest'])} LIMIT ? OFFSET ?"
     params.extend([f.limit, f.offset])
     return conn.execute(sql, params).fetchall()
 
 
 def count_ads(conn: sqlite3.Connection, f: AdFilter) -> int:
-    rows = query_ads(
-        conn,
-        AdFilter(**{**f.__dict__, "limit": 1_000_000_000, "offset": 0}),
-    )
-    return len(rows)
+    where, params = _build_where(f)
+    sql = "SELECT COUNT(*) FROM ads JOIN advertisers ON advertisers.id = ads.advertiser_id"
+    if where:
+        sql += " WHERE " + " AND ".join(where)
+    return conn.execute(sql, params).fetchone()[0]
 
 
 def get_ad(conn: sqlite3.Connection, ad_id: str) -> sqlite3.Row | None:

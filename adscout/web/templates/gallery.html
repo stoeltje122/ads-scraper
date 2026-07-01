@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% from "_macros.html" import ad_card %}
+{% block title %}Galerij{% endblock %}
+{% block content %}
+<h1>Galerij</h1>
+
+<form method="get" action="/" class="filters">
+  <label>Adverteerder
+    <select name="advertiser">
+      <option value="">Alle</option>
+      {% for adv in advertisers %}
+      <option value="{{ adv['id'] }}" {{ 'selected' if params['advertiser'] == adv['id']|string else '' }}>{{ adv['name'] }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Categorie
+    <select name="category">
+      <option value="">Alle</option>
+      {% for cat in adv_categories %}
+      <option value="{{ cat['name'] }}" {{ 'selected' if params['category'] == cat['name'] else '' }}>{{ cat['name'] }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Tag
+    <select name="tag">
+      <option value="">Alle</option>
+      {% for tag in ad_tag_categories %}
+      <option value="{{ tag['id'] }}" {{ 'selected' if params['tag'] == tag['id']|string else '' }}>{{ tag['name'] }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Format
+    <select name="format">
+      <option value="">Alle</option>
+      {% for fmt in formats %}
+      <option value="{{ fmt }}" {{ 'selected' if params['format'] == fmt else '' }}>{{ format_label(fmt) }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Status
+    <select name="status">
+      <option value="">Alle</option>
+      <option value="active" {{ 'selected' if params['status'] == 'active' else '' }}>Actief</option>
+      <option value="inactive" {{ 'selected' if params['status'] == 'inactive' else '' }}>Gestopt</option>
+    </select>
+  </label>
+  <label>Land
+    <select name="country">
+      <option value="">Alle</option>
+      {% for country in countries %}
+      <option value="{{ country }}" {{ 'selected' if params['country'] == country else '' }}>{{ country }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Looptijd min. (dagen)
+    <input type="number" name="min_runtime" min="0" value="{{ params['min_runtime'] or '' }}">
+  </label>
+  <label>Looptijd max. (dagen)
+    <input type="number" name="max_runtime" min="0" value="{{ params['max_runtime'] or '' }}">
+  </label>
+  <label>Eerst gezien na
+    <input type="date" name="after" value="{{ params['after'] or '' }}">
+  </label>
+  <label>Eerst gezien voor
+    <input type="date" name="before" value="{{ params['before'] or '' }}">
+  </label>
+  <label>Zoeken in tekst
+    <input type="search" name="q" value="{{ params['q'] or '' }}" placeholder="bijv. melatonine">
+  </label>
+  <label>Sorteren
+    <select name="sort">
+      {% for value, label in sort_options %}
+      <option value="{{ value }}" {{ 'selected' if params['sort'] == value else '' }}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-primary">Filteren</button>
+    <a class="btn" href="/">Reset</a>
+  </div>
+</form>
+
+<p class="result-count">{{ total }} {{ 'ad' if total == 1 else 'ads' }}{% if total_pages > 1 %} · pagina {{ page }} van {{ total_pages }}{% endif %}</p>
+
+{% if ads %}
+<div class="cards">
+  {% for ad in ads %}
+  {{ ad_card(ad, tags_map.get(ad['ad_archive_id'], [])) }}
+  {% endfor %}
+</div>
+{% else %}
+<p class="empty">Geen ads gevonden met deze filters. Pas de filters aan of draai <code>adscout collect</code>.</p>
+{% endif %}
+
+{% if total_pages > 1 %}
+<nav class="pagination">
+  {% if page > 1 %}
+  <a class="btn" href="/{{ qs(params, page=page - 1) }}">← Vorige</a>
+  {% endif %}
+  <span class="page-indicator">Pagina {{ page }} van {{ total_pages }}</span>
+  {% if page < total_pages %}
+  <a class="btn" href="/{{ qs(params, page=page + 1) }}">Volgende →</a>
+  {% endif %}
+</nav>
+{% endif %}
+{% endblock %}

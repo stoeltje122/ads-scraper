@@ -1,0 +1,55 @@
+{# Shared building blocks: status chip, runtime badge, ad card. #}
+
+{% macro status_chip(status) -%}
+{% if status == 'active' -%}
+<span class="chip chip-active">Actief</span>
+{%- else -%}
+<span class="chip chip-stopped">Gestopt</span>
+{%- endif %}
+{%- endmacro %}
+
+{% macro runtime_badge(days) -%}
+{% if days is not none -%}
+<span class="badge-runtime" title="Looptijd — onze beste proxy voor succes">{{ days }} {{ 'dag' if days == 1 else 'dagen' }}</span>
+{%- endif %}
+{%- endmacro %}
+
+{% macro ad_card(ad, tags, rank=None, show_stop=False) %}
+<article class="card">
+  {% if rank %}<span class="rank">#{{ rank }}</span>{% endif %}
+  {% set thumb = media_url(ad['thumb_path']) %}
+  {% if thumb %}
+  <a class="thumb" href="/ad/{{ ad['ad_archive_id'] }}">
+    <img src="{{ thumb }}" alt="Creative van {{ ad['advertiser_name'] }}" loading="lazy">
+  </a>
+  {% else %}
+  <a class="thumb thumb-placeholder" href="{{ ad_library_url(ad['ad_archive_id']) }}" target="_blank" rel="noopener">
+    <span>Geen lokale creative<br><small>Bekijk in de Ad Library ↗</small></span>
+  </a>
+  {% endif %}
+  <div class="card-body">
+    <div class="card-top">
+      <a class="advertiser-link" href="/advertiser/{{ ad['advertiser_id'] }}">{{ ad['advertiser_name'] }}</a>
+      {{ status_chip(ad['status']) }}
+    </div>
+    <div class="card-meta">
+      <span class="meta-format">{{ format_label(ad['format']) }}</span>
+      <span class="meta-date">Gestart {{ ad['ad_delivery_start']|day or '—' }}</span>
+      {% if show_stop and ad['status'] == 'inactive' %}
+      <span class="meta-date">Gestopt {{ (ad['ad_delivery_stop'] or ad['last_seen'])|day }}</span>
+      {% endif %}
+      {{ runtime_badge(ad['runtime_days']) }}
+    </div>
+    {% if ad['first_body'] %}
+    <p class="card-copy"><a href="/ad/{{ ad['ad_archive_id'] }}">{{ ad['first_body'][:120] }}{% if ad['first_body']|length > 120 %}…{% endif %}</a></p>
+    {% else %}
+    <p class="card-copy"><a href="/ad/{{ ad['ad_archive_id'] }}">Details bekijken →</a></p>
+    {% endif %}
+    {% if tags %}
+    <div class="card-tags">
+      {% for tag in tags %}<span class="tag">{{ tag }}</span>{% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</article>
+{% endmacro %}
