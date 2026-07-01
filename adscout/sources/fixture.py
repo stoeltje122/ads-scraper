@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 from typing import Iterator
 
-from adscout.models import AdRecord, PageCandidate
+from adscout.models import AdRecord, PageCandidate, aggregate_candidates
 from adscout.sources.base import AdSource
 from adscout.sources.meta import parse_ad
 
@@ -39,18 +39,11 @@ class FixtureAdSource(AdSource):
 
     def search_pages(self, brand_name: str, country: str) -> list[PageCandidate]:
         needle = brand_name.lower()
-        by_page: dict[str, PageCandidate] = {}
-        for item in self._load_all():
-            ad = parse_ad(item)
+
+        def matches(ad: AdRecord) -> bool:
             name = (ad.page_name or "").lower()
             text = " ".join(t.body or "" for t in ad.texts).lower()
-            if needle not in name and needle not in text:
-                continue
-            cand = by_page.setdefault(
-                ad.page_id or "?",
-                PageCandidate(page_id=ad.page_id or "?", page_name=ad.page_name or "?"),
-            )
-            cand.ads_seen += 1
-            if not ad.ad_delivery_stop:
-                cand.active_ads += 1
-        return sorted(by_page.values(), key=lambda c: (-c.active_ads, -c.ads_seen))
+            return needle in name or needle in text
+
+        records = [ad for ad in map(parse_ad, self._load_all()) if matches(ad)]
+        return aggregate_candidates(records)

@@ -11,11 +11,12 @@ import json
 import logging
 import time
 from typing import Any, Iterator
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import httpx
 
 from adscout.config import ADS_ARCHIVE_FIELDS, Settings
-from adscout.models import AdRecord, AdTextVariant, PageCandidate
+from adscout.models import AdRecord, AdTextVariant, PageCandidate, aggregate_candidates
 from adscout.sources.base import AdSource, AdSourceError, TokenError
 
 logger = logging.getLogger(__name__)
@@ -71,24 +72,13 @@ class MetaAdLibraryAPI(AdSource):
         """
         params = self._base_params(country, "ALL")
         params["search_terms"] = brand_name
-        by_page: dict[str, PageCandidate] = {}
-        count = 0
-        for item in self._paginate(params, max_items=800):
-            count += 1
-            ad = parse_ad(item)
-            if not ad.page_id:
-                continue
-            cand = by_page.setdefault(
-                ad.page_id,
-                PageCandidate(page_id=ad.page_id, page_name=ad.page_name or "?"),
-            )
-            cand.ads_seen += 1
-            if not ad.ad_delivery_stop:
-                cand.active_ads += 1
-            if cand.example_text is None and ad.texts and ad.texts[0].body:
-                cand.example_text = ad.texts[0].body[:140]
-        logger.info("search_pages(%r, %s): %d ads, %d pages", brand_name, country, count, len(by_page))
-        return sorted(by_page.values(), key=lambda c: (-c.active_ads, -c.ads_seen))
+        records = [parse_ad(item) for item in self._paginate(params, max_items=800)]
+        candidates = aggregate_candidates(records)
+        logger.info(
+            "search_pages(%r, %s): %d ads, %d pages",
+            brand_name, country, len(records), len(candidates),
+        )
+        return candidates
 
     # ── HTTP plumbing ─────────────────────────────────────────────────
 
@@ -198,6 +188,20 @@ def _parse_graph_error(resp: httpx.Response) -> tuple[int, str]:
         return resp.status_code, resp.text[:300]
 
 
+def strip_access_token(url: str | None) -> str | None:
+    """Remove the access_token query param from a snapshot URL.
+
+    Meta embeds the caller's token in ad_snapshot_url; storing that would
+    bake a live secret into the database (and any backup or data commit).
+    The token is re-appended at request time where needed.
+    """
+    if not url:
+        return url
+    parts = urlparse(url)
+    query = [(k, v) for k, v in parse_qsl(parts.query) if k != "access_token"]
+    return urlunparse(parts._replace(query=urlencode(query)))
+
+
 def parse_ad(item: dict[str, Any]) -> AdRecord:
     """Normalize one /ads_archive item into an AdRecord.
 
@@ -225,6 +229,10 @@ def parse_ad(item: dict[str, Any]) -> AdRecord:
     except (TypeError, ValueError):
         eu_reach = None
 
+    snapshot_url = strip_access_token(item.get("ad_snapshot_url"))
+    if item.get("ad_snapshot_url"):
+        item = {**item, "ad_snapshot_url": snapshot_url}  # keep raw token-free too
+
     return AdRecord(
         ad_archive_id=str(item.get("id", "")),
         page_id=str(item["page_id"]) if item.get("page_id") else None,
@@ -232,7 +240,7 @@ def parse_ad(item: dict[str, Any]) -> AdRecord:
         ad_creation_time=item.get("ad_creation_time"),
         ad_delivery_start=item.get("ad_delivery_start_time"),
         ad_delivery_stop=item.get("ad_delivery_stop_time"),
-        snapshot_url=item.get("ad_snapshot_url"),
+        snapshot_url=snapshot_url,
         platforms=list(item.get("publisher_platforms") or []),
         languages=list(item.get("languages") or []),
         texts=texts,

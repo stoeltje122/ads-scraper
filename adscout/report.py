@@ -8,15 +8,17 @@ e-mail/Slack without touching this module.
 from __future__ import annotations
 
 import html
+import re
 import sqlite3
 from datetime import date, timedelta
 from pathlib import Path
 
 from adscout import queries
+from adscout.models import utc_today
 
 
 def build_weekly_markdown(conn: sqlite3.Connection, today: date | None = None) -> str:
-    today = today or date.today()
+    today = today or utc_today()
     since = today - timedelta(days=7)
     lines: list[str] = []
     add = lines.append
@@ -37,7 +39,7 @@ def build_weekly_markdown(conn: sqlite3.Connection, today: date | None = None) -
     for row in stats:
         paused = " *(gepauzeerd)*" if row["advertiser_status"] == "paused" else ""
         add(
-            f"| {row['name']}{paused} | {row['category'] or '-'} | {row['active_now'] or 0} "
+            f"| {_md_safe(row['name'])}{paused} | {_md_safe(row['category'] or '-')} | {row['active_now'] or 0} "
             f"| {row['new_ads'] or 0} | {row['stopped_ads'] or 0} | {row['total_ads'] or 0} |"
         )
     add("")
@@ -68,7 +70,7 @@ def build_weekly_markdown(conn: sqlite3.Connection, today: date | None = None) -
         add("")
         for ad in top:
             days = ad["runtime_days"]
-            body = (ad["first_body"] or "").replace("\n", " ")[:110]
+            body = _md_safe((ad["first_body"] or "").replace("\n", " "))[:110]
             add(
                 f"- **{ad['advertiser_name']}** — {days if days is not None else '?'} dagen, "
                 f"{ad['format']}, gestart {(_day(ad['ad_delivery_start']) or '?')} — "
@@ -105,7 +107,7 @@ def build_weekly_markdown(conn: sqlite3.Connection, today: date | None = None) -
 def write_weekly(
     conn: sqlite3.Connection, reports_dir: Path, today: date | None = None
 ) -> tuple[Path, Path]:
-    today = today or date.today()
+    today = today or utc_today()
     reports_dir.mkdir(parents=True, exist_ok=True)
     md = build_weekly_markdown(conn, today)
     md_path = reports_dir / f"weekly-{today.isoformat()}.md"
@@ -113,6 +115,12 @@ def write_weekly(
     html_path = reports_dir / f"weekly-{today.isoformat()}.html"
     html_path.write_text(_markdown_to_html(md), encoding="utf-8")
     return md_path, html_path
+
+
+def _md_safe(text: str) -> str:
+    """Neutralize markdown-significant chars in interpolated untrusted text
+    (competitor ad copy full of *, |, [ would otherwise break tables/lists)."""
+    return re.sub(r"[|*\[\]`>#_]", " ", text)
 
 
 def ad_library_url(ad_archive_id: str) -> str:

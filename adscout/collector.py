@@ -17,7 +17,7 @@ import sqlite3
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 
-from adscout.models import AdRecord
+from adscout.models import AdRecord, utc_today
 from adscout.sources.base import AdSource, AdSourceError, TokenError
 
 logger = logging.getLogger(__name__)
@@ -26,11 +26,12 @@ logger = logging.getLogger(__name__)
 @dataclass
 class AdvertiserResult:
     advertiser: str
-    ads_fetched: int = 0
+    ads_fetched: int = 0          # unique ads seen this run
     new_ads: int = 0
     stopped_ads: int = 0
     error: str | None = None
     skipped: str | None = None
+    warning: str | None = None
 
 
 @dataclass
@@ -69,7 +70,7 @@ def collect(
     run_date: date | None = None,
 ) -> RunResult:
     """Run one collect pass over all active advertisers."""
-    run_date = run_date or datetime.now(timezone.utc).date()
+    run_date = run_date or utc_today()
     result = RunResult(started_at=datetime.now(timezone.utc).isoformat(timespec="seconds"))
 
     advertisers = conn.execute(
@@ -100,9 +101,9 @@ def collect(
                     if not record.ad_archive_id:
                         continue
                     is_new, just_stopped = upsert_ad(conn, adv["id"], record, country, run_date)
-                    adv_result.ads_fetched += 1
                     if record.ad_archive_id not in seen_ids:
                         seen_ids.add(record.ad_archive_id)
+                        adv_result.ads_fetched += 1
                         adv_result.new_ads += 1 if is_new else 0
                         adv_result.stopped_ads += 1 if just_stopped else 0
                         if is_new:
@@ -136,9 +137,14 @@ def collect(
         if fetch_complete and seen_ids:
             adv_result.stopped_ads += mark_vanished(conn, adv["id"], seen_ids, run_date)
         elif fetch_complete and not seen_ids:
-            logger.warning(
-                "%s: 0 ads teruggekregen — vanish-detectie overgeslagen", adv["name"]
+            # Persist this as a warning: a stale/removed page looks exactly
+            # like this, and it must be visible in `adscout status`, not
+            # only in the log file.
+            adv_result.warning = (
+                "0 ads teruggekregen — vanish-detectie overgeslagen. Blijft dit "
+                "zo, controleer dan of de page_id nog klopt (adscout resolve)."
             )
+            logger.warning("%s: %s", adv["name"], adv_result.warning)
 
     result.finished_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     result.run_id = record_run(conn, result)
@@ -158,9 +164,11 @@ def upsert_ad(
     """
     day = run_date.isoformat()
     status = "active" if record.is_active(run_date) else "inactive"
+    raw = record.raw_json()
 
     existing = conn.execute(
-        "SELECT status, countries FROM ads WHERE ad_archive_id = ?", (record.ad_archive_id,)
+        "SELECT status, countries, raw_json_latest FROM ads WHERE ad_archive_id = ?",
+        (record.ad_archive_id,),
     ).fetchone()
 
     is_new = existing is None
@@ -189,7 +197,7 @@ def upsert_ad(
                 json.dumps(record.languages),
                 json.dumps([country]),
                 record.eu_reach,
-                record.raw_json(),
+                raw,
             ),
         )
     else:
@@ -210,7 +218,7 @@ def upsert_ad(
                 json.dumps(record.languages),
                 json.dumps(sorted(countries)),
                 record.eu_reach,
-                record.raw_json(),
+                raw,
                 record.ad_archive_id,
             ),
         )
@@ -224,15 +232,25 @@ def upsert_ad(
                  caption = excluded.caption, description = excluded.description""",
             (record.ad_archive_id, i, text.body, text.title, text.caption, text.description),
         )
+    # Meta can return fewer text variants than before; drop the leftovers so
+    # withdrawn copy is not presented as current.
+    conn.execute(
+        "DELETE FROM ad_texts WHERE ad_id = ? AND variant_index >= ?",
+        (record.ad_archive_id, len(record.texts)),
+    )
 
-    # One snapshot per ad per day → idempotent second run.
+    # One snapshot per ad per day → idempotent second run. raw_json is only
+    # stored when the payload changed since the previous sighting (NULL =
+    # "unchanged"); this keeps years of daily snapshots small. COALESCE keeps
+    # a same-day raw that an earlier run already recorded.
+    snapshot_raw = None if (existing and existing["raw_json_latest"] == raw) else raw
     conn.execute(
         """INSERT INTO ad_snapshots (ad_id, seen_at, status, eu_reach, raw_json)
            VALUES (?, ?, ?, ?, ?)
            ON CONFLICT(ad_id, seen_at) DO UPDATE SET
              status = excluded.status, eu_reach = excluded.eu_reach,
-             raw_json = excluded.raw_json""",
-        (record.ad_archive_id, day, status, record.eu_reach, record.raw_json()),
+             raw_json = COALESCE(excluded.raw_json, ad_snapshots.raw_json)""",
+        (record.ad_archive_id, day, status, record.eu_reach, snapshot_raw),
     )
     return is_new, just_stopped
 
@@ -266,6 +284,7 @@ def record_run(conn: sqlite3.Connection, result: RunResult) -> int:
             "stopped_ads": r.stopped_ads,
             "error": r.error,
             "skipped": r.skipped,
+            "warning": r.warning,
         }
         for r in result.per_advertiser
     ]

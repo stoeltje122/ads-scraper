@@ -234,8 +234,8 @@ def test_countries_merge_when_ad_seen_in_nl_and_be(tmp_db, fixture_source, run_c
         assert json.loads(row["countries"]) == ["BE", "NL"]
 
     zelesta = _result_for(result, "Zelesta")
-    assert zelesta.ads_fetched == 4  # 2 ads x 2 countries
-    assert zelesta.new_ads == 2     # but each ad is new exactly once
+    assert zelesta.ads_fetched == 2  # unique ads, not (ad x country) pairs
+    assert zelesta.new_ads == 2     # each ad is new exactly once
     assert result.new_ads == 6
     # Still one snapshot per ad per day, regardless of country count.
     assert _count(tmp_db, "ad_snapshots") == 6

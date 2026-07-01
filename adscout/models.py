@@ -4,8 +4,18 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import date
-from typing import Any
+from datetime import date, datetime, timezone
+from typing import Any, Iterable
+
+
+def utc_today() -> date:
+    """The one day-boundary policy for all of AdScout.
+
+    Everything (collector stamps, report windows, trend buckets, active
+    checks) uses the UTC calendar day, so a nightly run near local midnight
+    or a DST switch can never shift data across day buckets.
+    """
+    return datetime.now(timezone.utc).date()
 
 
 @dataclass
@@ -56,6 +66,28 @@ class PageCandidate:
     ads_seen: int = 0
     active_ads: int = 0
     example_text: str | None = None
+
+
+def aggregate_candidates(records: Iterable[AdRecord]) -> list[PageCandidate]:
+    """Group ads by page into resolver candidates, most-active first.
+
+    Single definition used by every AdSource so 'active' and the ranking
+    can never drift between the real API and fixtures/tests.
+    """
+    today = utc_today()
+    by_page: dict[str, PageCandidate] = {}
+    for ad in records:
+        if not ad.page_id:
+            continue
+        cand = by_page.setdefault(
+            ad.page_id, PageCandidate(page_id=ad.page_id, page_name=ad.page_name or "?")
+        )
+        cand.ads_seen += 1
+        if ad.is_active(today):
+            cand.active_ads += 1
+        if cand.example_text is None and ad.texts and ad.texts[0].body:
+            cand.example_text = ad.texts[0].body[:140]
+    return sorted(by_page.values(), key=lambda c: (-c.active_ads, -c.ads_seen))
 
 
 def _parse_day(value: str) -> date:

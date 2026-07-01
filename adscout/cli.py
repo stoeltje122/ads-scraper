@@ -15,7 +15,7 @@ from pathlib import Path
 import typer
 
 from adscout import __version__, queries, report as report_mod, store
-from adscout.config import Settings, load_settings, setup_logging
+from adscout.config import Settings, load_settings, parse_countries, setup_logging
 from adscout.db import open_db
 from adscout.models import PageCandidate
 from adscout.sources import AdSource, FixtureAdSource, MetaAdLibraryAPI, TokenError
@@ -31,10 +31,12 @@ advertiser_app = typer.Typer(help="Watchlist beheren (concurrenten).", no_args_i
 page_app = typer.Typer(help="Facebook-pagina's van concurrenten beheren.", no_args_is_help=True)
 category_app = typer.Typer(help="Categorieën en tags beheren.", no_args_is_help=True)
 tag_app = typer.Typer(help="Ad-tags en AI-suggesties.", no_args_is_help=True)
+creatives_app = typer.Typer(help="Gedownloade media beheren.", no_args_is_help=True)
 app.add_typer(advertiser_app, name="advertiser")
 app.add_typer(page_app, name="page")
 app.add_typer(category_app, name="category")
 app.add_typer(tag_app, name="tag")
+app.add_typer(creatives_app, name="creatives")
 
 DEFAULT_FIXTURE_DIR = Path("tests/fixtures/ads")
 
@@ -91,7 +93,7 @@ def resolve(
     settings, conn = _boot()
     adv = store.get_advertiser(conn, brand)
     countries = [c.upper() for c in country] if country else (
-        [c.strip() for c in adv["countries"].split(",")] if adv else settings.default_countries
+        parse_countries(adv["countries"]) if adv else settings.default_countries
     )
     try:
         src = _source(settings, source, fixture_dir)
@@ -144,6 +146,28 @@ def collect(
     from adscout import collector, creatives
 
     settings, conn = _boot(verbose=verbose)
+
+    # Guard against a silently-wrong environment: an empty watchlist means
+    # this is a fresh DB (wrong werkmap? ADSCOUT_DATA_DIR verkeerd? init
+    # vergeten?) — collecting would "succeed" while building history in the
+    # wrong place.
+    n_advertisers = conn.execute("SELECT COUNT(*) FROM advertisers").fetchone()[0]
+    if n_advertisers == 0:
+        typer.secho(
+            f"Lege watchlist in {settings.db_path.resolve()} — is dit de juiste map?\n"
+            "Draai `adscout init` in de projectmap, of zet ADSCOUT_DATA_DIR in .env.",
+            fg="red",
+        )
+        raise typer.Exit(2)
+    n_pages = conn.execute("SELECT COUNT(*) FROM advertiser_pages").fetchone()[0]
+    if n_pages == 0:
+        typer.secho(
+            "Geen enkele concurrent heeft een gekoppelde pagina — er valt niets "
+            "op te halen.\nKoppel eerst pagina's: adscout resolve \"<merknaam>\".",
+            fg="red",
+        )
+        raise typer.Exit(2)
+
     try:
         src = _source(settings, source, fixture_dir)
     except TokenError as exc:
@@ -155,7 +179,10 @@ def collect(
 
     if not skip_creatives and source != "fixture" and result.new_ad_ids:
         typer.echo(f"Creatives downloaden voor {len(result.new_ad_ids)} nieuwe ads…")
-        creatives.fetch_for_new_ads(conn, result.new_ad_ids, settings.creatives_dir)
+        creatives.fetch_for_new_ads(
+            conn, result.new_ad_ids, settings.creatives_dir,
+            access_token=settings.meta_access_token,
+        )
 
     typer.echo(f"\nRun #{result.run_id} — {result.started_at} → {result.finished_at}")
     for r in result.per_advertiser:
@@ -163,6 +190,8 @@ def collect(
             typer.echo(f"  ⏭  {r.advertiser}: overgeslagen ({r.skipped})")
         elif r.error:
             typer.secho(f"  ✗  {r.advertiser}: {r.error}", fg="red")
+        elif r.warning:
+            typer.secho(f"  ⚠  {r.advertiser}: {r.warning}", fg="yellow")
         else:
             typer.echo(
                 f"  ✓  {r.advertiser}: {r.ads_fetched} ads, "
@@ -210,6 +239,12 @@ def status() -> None:
         )
         for err in json.loads(run["errors"] or "[]"):
             typer.secho(f"      fout: {err}", fg="red")
+        for entry in json.loads(run["detail"] or "[]"):
+            if entry.get("warning"):
+                typer.secho(
+                    f"      waarschuwing {entry['advertiser']}: {entry['warning']}",
+                    fg="yellow",
+                )
 
     pending = len(queries.pending_ai_suggestions(conn))
     if pending:
@@ -291,11 +326,20 @@ def export(
     if json_out:
         path = out if (out and not csv_out) else Path("exports") / f"adscout-{stamp}.json"
         path.parent.mkdir(parents=True, exist_ok=True)
+        # All texts in one query instead of one query per ad.
+        texts_by_ad: dict[str, list[dict]] = {}
+        for t in conn.execute(
+            "SELECT ad_id, variant_index, body, title, caption, description "
+            "FROM ad_texts ORDER BY ad_id, variant_index"
+        ):
+            texts_by_ad.setdefault(t["ad_id"], []).append(
+                {k: t[k] for k in ("variant_index", "body", "title", "caption", "description")}
+            )
         payload = []
         for row in rows:
             record = flat(row)
             record["tags"] = tags_map.get(row["ad_archive_id"], [])
-            record["texts"] = [dict(t) for t in queries.ad_texts(conn, row["ad_archive_id"])]
+            record["texts"] = texts_by_ad.get(row["ad_archive_id"], [])
             payload.append(record)
         path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         written.append(path)
@@ -338,12 +382,12 @@ def verify(
 def advertiser_add(
     name: str,
     category: str = typer.Option(None, help="Concurrent-categorie (zie `adscout category list`)."),
-    countries: str = typer.Option("NL", help="Comma-separated, bijv. NL,BE."),
+    countries: str = typer.Option(None, help="Comma-separated, bijv. NL,BE (default NL; bestaande waarde blijft staan)."),
     notes: str = typer.Option(None),
 ) -> None:
     """Concurrent toevoegen (pagina's daarna via `adscout resolve` of `page add`)."""
     _, conn = _boot()
-    store.add_advertiser(conn, name, category, [c.strip().upper() for c in countries.split(",")], notes)
+    store.add_advertiser(conn, name, category, parse_countries(countries) or None, notes)
     typer.echo(f'✓ Concurrent "{name}" toegevoegd. Koppel nu een pagina: adscout resolve "{name}"')
 
 
@@ -395,7 +439,7 @@ def advertiser_set(
     store.update_advertiser(
         conn, adv["id"],
         category=category,
-        countries=[c.strip().upper() for c in countries.split(",")] if countries else None,
+        countries=parse_countries(countries) or None,
         notes=notes,
     )
     typer.echo(f"✓ {adv['name']} bijgewerkt.")
@@ -478,6 +522,26 @@ def category_delete(category_id: int) -> None:
     if typer.confirm(f"Verwijder '{row['name']}' ({row['type']}) inclusief alle tag-koppelingen?"):
         store.delete_category(conn, category_id)
         typer.echo("✓ Verwijderd.")
+
+
+@creatives_app.command("backfill")
+def creatives_backfill(
+    limit: int = typer.Option(200, help="Max aantal ads per keer."),
+) -> None:
+    """Media alsnog downloaden voor ads zonder creatives (bijv. na een
+    mislukte download of een --skip-creatives run)."""
+    from adscout import creatives
+
+    settings, conn = _boot()
+    ad_ids = creatives.ads_without_creatives(conn, limit=limit)
+    if not ad_ids:
+        typer.echo("Geen ads zonder creatives gevonden — niets te doen.")
+        return
+    typer.echo(f"Backfill voor {len(ad_ids)} ads…")
+    n = creatives.fetch_for_new_ads(
+        conn, ad_ids, settings.creatives_dir, access_token=settings.meta_access_token
+    )
+    typer.echo(f"✓ {n} bestanden gedownload. (Niet alles lukt: verlopen snapshots blijven leeg.)")
 
 
 @tag_app.command("suggest")

@@ -14,6 +14,7 @@ import json
 import logging
 import re
 import sqlite3
+from datetime import datetime, timezone
 
 from adscout import store
 from adscout.config import Settings
@@ -61,7 +62,8 @@ def suggest_for_untagged(
                   advertisers.category AS advertiser_category
            FROM ads
            JOIN advertisers ON advertisers.id = ads.advertiser_id
-           WHERE NOT EXISTS (SELECT 1 FROM ad_tags at WHERE at.ad_id = ads.ad_archive_id)
+           WHERE ads.ai_tagged_at IS NULL
+             AND NOT EXISTS (SELECT 1 FROM ad_tags at WHERE at.ad_id = ads.ad_archive_id)
              AND EXISTS (SELECT 1 FROM ad_texts t WHERE t.ad_id = ads.ad_archive_id
                          AND t.body IS NOT NULL)
            ORDER BY ads.first_seen DESC LIMIT ?""",
@@ -108,6 +110,16 @@ def suggest_for_untagged(
                 continue  # model invented a tag → drop silently
             store.suggest_tag(conn, ad["ad_archive_id"], category_id, confidence)
             n += 1
+        # Mark as analyzed even with zero usable suggestions, so the next
+        # run moves on instead of re-analyzing the same ads forever.
+        conn.execute(
+            "UPDATE ads SET ai_tagged_at = ? WHERE ad_archive_id = ?",
+            (
+                datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                ad["ad_archive_id"],
+            ),
+        )
+        conn.commit()
         if n:
             tagged += 1
             logger.info("Ad %s: %d tag-suggesties", ad["ad_archive_id"], n)

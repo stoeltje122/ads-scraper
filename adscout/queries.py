@@ -11,6 +11,8 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import date, timedelta
 
+from adscout.models import utc_today
+
 # SQL fragment implementing the runtime metric (in days), clamped at 0
 # like models.runtime_days.
 RUNTIME_SQL = (
@@ -26,10 +28,13 @@ SELECT ads.*,
        advertisers.name AS advertiser_name,
        advertisers.category AS advertiser_category,
        CASE WHEN ads.ad_delivery_start IS NOT NULL THEN {RUNTIME_SQL} END AS runtime_days,
+       {STOP_DAY_SQL} AS stop_day,
        (SELECT body FROM ad_texts t WHERE t.ad_id = ads.ad_archive_id
         ORDER BY t.variant_index LIMIT 1) AS first_body,
+       -- thumbnail: never the video file itself (an <img> can't render .mp4)
        (SELECT local_path FROM creatives c WHERE c.ad_id = ads.ad_archive_id
-        AND c.local_path IS NOT NULL ORDER BY c.id LIMIT 1) AS thumb_path,
+        AND c.local_path IS NOT NULL AND c.media_type IN ('image', 'video_thumbnail')
+        ORDER BY (c.media_type = 'image') DESC, c.id LIMIT 1) AS thumb_path,
        (SELECT COUNT(*) FROM ad_texts t WHERE t.ad_id = ads.ad_archive_id) AS n_variants
 FROM ads
 JOIN advertisers ON advertisers.id = ads.advertiser_id
@@ -203,7 +208,7 @@ def volume_series(
     conn: sqlite3.Connection, advertiser_id: int, days: int = 90
 ) -> list[sqlite3.Row]:
     """Active-ad count per snapshot day for one advertiser (trend chart)."""
-    since = (date.today() - timedelta(days=days)).isoformat()
+    since = (utc_today() - timedelta(days=days)).isoformat()
     return conn.execute(
         """SELECT s.seen_at, SUM(CASE WHEN s.status = 'active' THEN 1 ELSE 0 END) AS active
            FROM ad_snapshots s
@@ -257,6 +262,24 @@ def export_rows(conn: sqlite3.Connection) -> list[sqlite3.Row]:
         + """ ORDER BY advertisers.name COLLATE NOCASE,
                         COALESCE(substr(ads.ad_delivery_start,1,10), ads.first_seen) DESC"""
     ).fetchall()
+
+
+def tags_for_ads(conn: sqlite3.Connection, ad_ids: list[str]) -> dict[str, list[str]]:
+    """Accepted tag names for just the given ads (dashboard page renders)."""
+    out: dict[str, list[str]] = {}
+    if not ad_ids:
+        return out
+    placeholders = ",".join("?" * len(ad_ids))
+    rows = conn.execute(
+        f"""SELECT at.ad_id, c.name FROM ad_tags at
+            JOIN categories c ON c.id = at.category_id
+            WHERE at.status = 'accepted' AND at.ad_id IN ({placeholders})
+            ORDER BY c.name""",
+        list(ad_ids),
+    ).fetchall()
+    for row in rows:
+        out.setdefault(row["ad_id"], []).append(row["name"])
+    return out
 
 
 def accepted_tags_map(conn: sqlite3.Connection) -> dict[str, list[str]]:

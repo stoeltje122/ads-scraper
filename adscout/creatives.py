@@ -82,12 +82,22 @@ def extract_media(html: str) -> tuple[str, list[tuple[str, str]]]:
     return fmt, media[:MAX_MEDIA_PER_AD]
 
 
+def snapshot_request_url(snapshot_url: str, access_token: str | None) -> str:
+    """Stored snapshot URLs are token-free (no secrets in the DB); the
+    current token is appended here, at request time."""
+    if not access_token or "access_token=" in snapshot_url:
+        return snapshot_url
+    sep = "&" if "?" in snapshot_url else "?"
+    return f"{snapshot_url}{sep}access_token={access_token}"
+
+
 def fetch_for_ad(
     conn: sqlite3.Connection,
     ad_id: str,
     snapshot_url: str | None,
     creatives_dir: Path,
     client: httpx.Client | None = None,
+    access_token: str | None = None,
 ) -> int:
     """Download media for one ad. Returns number of files stored."""
     if not snapshot_url:
@@ -96,7 +106,7 @@ def fetch_for_ad(
     client = client or httpx.Client(timeout=30.0, follow_redirects=True)
     stored = 0
     try:
-        resp = client.get(snapshot_url)
+        resp = client.get(snapshot_request_url(snapshot_url, access_token))
         if resp.status_code != 200:
             logger.info("Snapshot van ad %s niet ophaalbaar (HTTP %d)", ad_id, resp.status_code)
             return 0
@@ -162,7 +172,10 @@ def _download_one(
 
 
 def fetch_for_new_ads(
-    conn: sqlite3.Connection, ad_ids: list[str], creatives_dir: Path
+    conn: sqlite3.Connection,
+    ad_ids: list[str],
+    creatives_dir: Path,
+    access_token: str | None = None,
 ) -> int:
     """Download creatives for a batch of (new) ads. Never raises."""
     total = 0
@@ -174,8 +187,27 @@ def fetch_for_new_ads(
             if not row:
                 continue
             try:
-                total += fetch_for_ad(conn, ad_id, row["snapshot_url"], creatives_dir, client)
+                total += fetch_for_ad(
+                    conn, ad_id, row["snapshot_url"], creatives_dir, client,
+                    access_token=access_token,
+                )
             except Exception:
                 logger.exception("Creative-download voor %s mislukt — ga door", ad_id)
     logger.info("Creatives gedownload: %d bestanden voor %d ads", total, len(ad_ids))
     return total
+
+
+def ads_without_creatives(conn: sqlite3.Connection, limit: int = 200) -> list[str]:
+    """Ads that never got media (failed download, --skip-creatives run) —
+    the backfill target. Newest first: old snapshots may no longer render."""
+    return [
+        row["ad_archive_id"]
+        for row in conn.execute(
+            """SELECT ad_archive_id FROM ads
+               WHERE snapshot_url IS NOT NULL
+                 AND NOT EXISTS (SELECT 1 FROM creatives c
+                                 WHERE c.ad_id = ads.ad_archive_id)
+               ORDER BY first_seen DESC LIMIT ?""",
+            (limit,),
+        )
+    ]

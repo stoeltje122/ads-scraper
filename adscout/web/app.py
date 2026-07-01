@@ -10,19 +10,21 @@ from __future__ import annotations
 import json
 import math
 import sqlite3
-from datetime import date, timedelta
+from datetime import timedelta
 from pathlib import Path
 from typing import AsyncIterator
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from adscout import queries, store
 from adscout.config import Settings, load_settings
+from adscout.creatives import snapshot_request_url
 from adscout.db import open_db
+from adscout.models import utc_today
 from adscout.queries import AdFilter
 from adscout.report import ad_library_url
 from adscout.web.chart import volume_chart_svg
@@ -111,14 +113,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or load_settings()
     app = FastAPI(title="AdScout", docs_url=None, redoc_url=None)
 
+    @app.middleware("http")
+    async def same_origin_posts(request: Request, call_next):
+        """Reject cross-site POSTs (CSRF guard for a localhost tool).
+
+        Browsers attach an Origin header to cross-origin form posts; a
+        mismatch with the Host we're serving on means some other website is
+        firing requests at the dashboard. Same-origin posts and non-browser
+        clients (no Origin header) pass through.
+        """
+        if request.method == "POST":
+            origin = request.headers.get("origin")
+            if origin and urlparse(origin).netloc != request.headers.get("host", ""):
+                return Response("Cross-site POST geweigerd.", status_code=403)
+        return await call_next(request)
+
     app.mount("/static", StaticFiles(directory=WEB_DIR / "static"), name="static")
-    # Creatives dir only exists after the first collect with downloads;
-    # mount conditionally so the dashboard also runs on a fresh install.
-    media_available = settings.creatives_dir.is_dir()
-    if media_available:
-        app.mount(
-            "/media", StaticFiles(directory=settings.creatives_dir), name="media"
-        )
+    # Always mount /media: create the creatives dir up front so thumbnails
+    # appear as soon as a collect downloads them, without restarting the web
+    # process.
+    settings.creatives_dir.mkdir(parents=True, exist_ok=True)
+    app.mount("/media", StaticFiles(directory=settings.creatives_dir), name="media")
 
     templates = Jinja2Templates(directory=WEB_DIR / "templates")
 
@@ -128,7 +143,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         local_path values are absolute or repo-relative paths into
         settings.creatives_dir; the flat dir is served by filename.
         """
-        if not local_path or not media_available:
+        if not local_path:
             return None
         name = Path(local_path).name
         if not (settings.creatives_dir / name).is_file():
@@ -207,7 +222,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "page": page,
                 "total_pages": max(1, math.ceil(total / PAGE_SIZE)),
                 "params": params,
-                "tags_map": queries.accepted_tags_map(conn),
+                "tags_map": queries.tags_for_ads(conn, [a["ad_archive_id"] for a in ads]),
                 "advertisers": advertisers,
                 "adv_categories": store.list_categories(conn, "advertiser_category"),
                 "ad_tag_categories": store.list_categories(conn, "ad_tag"),
@@ -230,7 +245,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "winners": rows,
                 "category": category,
                 "adv_categories": store.list_categories(conn, "advertiser_category"),
-                "tags_map": queries.accepted_tags_map(conn),
+                "tags_map": queries.tags_for_ads(conn, [a["ad_archive_id"] for a in rows]),
             },
         )
 
@@ -241,7 +256,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         days = _int_or_none(request.query_params.get("days")) or 7
         if days not in CHANGE_PERIODS:
             days = 7
-        since = date.today() - timedelta(days=days)
+        since = utc_today() - timedelta(days=days)
+        new_ads = queries.new_since(conn, since)
+        stopped_ads = queries.stopped_since(conn, since)
+        ad_ids = [a["ad_archive_id"] for a in new_ads] + [a["ad_archive_id"] for a in stopped_ads]
         return render(
             request,
             "changes.html",
@@ -249,9 +267,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "nav": "changes",
                 "days": days,
                 "since": since.isoformat(),
-                "new_ads": queries.new_since(conn, since),
-                "stopped_ads": queries.stopped_since(conn, since),
-                "tags_map": queries.accepted_tags_map(conn),
+                "new_ads": new_ads,
+                "stopped_ads": stopped_ads,
+                "tags_map": queries.tags_for_ads(conn, ad_ids),
             },
         )
 
@@ -293,7 +311,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "top_runners": active[:5],
                 "chart_svg": volume_chart_svg(series),
                 "pages": store.pages_for(conn, advertiser_id),
-                "tags_map": queries.accepted_tags_map(conn),
+                "tags_map": queries.tags_for_ads(
+                    conn,
+                    [a["ad_archive_id"] for a in active] + [a["ad_archive_id"] for a in stopped],
+                ),
             },
         )
 
@@ -341,6 +362,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "tag_groups": _group_tags(store.list_categories(conn, "ad_tag")),
                 "shared_ads": queries.shared_creative_ads(conn, ad_id),
             },
+        )
+
+    @app.get("/ad/{ad_id}/snapshot")
+    async def ad_snapshot_redirect(
+        ad_id: str, conn: sqlite3.Connection = Depends(get_conn)
+    ):
+        """Redirect to Meta's render URL, appending the *current* token.
+
+        Stored snapshot URLs are token-free (no secrets in the DB); without
+        a configured token the durable Ad Library page is used instead.
+        """
+        ad = conn.execute(
+            "SELECT snapshot_url FROM ads WHERE ad_archive_id = ?", (ad_id,)
+        ).fetchone()
+        if not ad:
+            raise HTTPException(status_code=404, detail="Ad niet gevonden")
+        url = ad["snapshot_url"]
+        # Without a token the render URL won't work anyway — use the durable
+        # public Ad Library page instead.
+        if not url or not url.startswith("https://") or not settings.meta_access_token:
+            return RedirectResponse(ad_library_url(ad_id), status_code=302)
+        return RedirectResponse(
+            snapshot_request_url(url, settings.meta_access_token), status_code=302
         )
 
     @app.post("/ad/{ad_id}/tags")

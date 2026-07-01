@@ -239,17 +239,23 @@ def seed_taxonomy(conn: sqlite3.Connection, taxonomy_path: Path | str) -> int:
 
 
 def seed_competitors(conn: sqlite3.Connection, seed_path: Path | str) -> int:
-    """Idempotent: upserts advertisers by name. Pages come from `adscout resolve`."""
+    """Idempotent seed. Existing advertisers are left untouched (user edits
+    in DB/dashboard win over the YAML); only new names are inserted. Pages
+    normally come from `adscout resolve`, but page_ids in the YAML are added."""
     data = yaml.safe_load(Path(seed_path).read_text(encoding="utf-8")) or {}
     n = 0
     for adv in data.get("advertisers", []):
-        advertiser_id = add_advertiser(
-            conn,
-            name=adv["name"],
-            category=adv.get("category"),
-            countries=[str(c).upper() for c in adv.get("countries", ["NL"])],
-            notes=adv.get("notes"),
-        )
+        existing = get_advertiser(conn, adv["name"])
+        if existing:
+            advertiser_id = existing["id"]
+        else:
+            advertiser_id = add_advertiser(
+                conn,
+                name=adv["name"],
+                category=adv.get("category"),
+                countries=[str(c).upper() for c in adv.get("countries", ["NL"])],
+                notes=adv.get("notes"),
+            )
         for page in adv.get("page_ids", []) or []:
             if isinstance(page, dict):
                 add_page(conn, advertiser_id, str(page["page_id"]), page.get("page_name"))

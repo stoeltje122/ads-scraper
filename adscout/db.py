@@ -2,6 +2,11 @@
 
 Plain sqlite3 with numbered SQL migrations in adscout/migrations/.
 Rule: never edit an applied migration — add a new numbered file.
+
+Migrations run atomically: every statement of a migration plus its
+schema_migrations bookkeeping row commit together, or roll back together.
+(Deliberately NOT executescript(): that autocommits per statement, which
+would leave a half-applied schema if a migration ever failed midway.)
 """
 
 from __future__ import annotations
@@ -27,6 +32,27 @@ def connect(db_path: Path | str) -> sqlite3.Connection:
     return conn
 
 
+def split_statements(sql: str) -> list[str]:
+    """Split a migration script into complete SQL statements.
+
+    Uses sqlite3.complete_statement (sqlite3_complete), which understands
+    semicolons inside strings and trigger BEGIN...END bodies.
+    """
+    statements: list[str] = []
+    buf = ""
+    for line in sql.splitlines(keepends=True):
+        stripped = line.strip()
+        if not buf and (not stripped or stripped.startswith("--")):
+            continue  # skip comments/blank lines between statements
+        buf += line
+        if sqlite3.complete_statement(buf):
+            statements.append(buf.strip())
+            buf = ""
+    if buf.strip():
+        raise ValueError(f"Migratie eindigt met een onafgemaakt statement: {buf[:120]!r}")
+    return statements
+
+
 def migrate(conn: sqlite3.Connection) -> list[int]:
     """Apply pending migrations in order. Returns applied version numbers."""
     conn.execute(
@@ -35,6 +61,7 @@ def migrate(conn: sqlite3.Connection) -> list[int]:
                applied_at TEXT NOT NULL DEFAULT (datetime('now'))
            )"""
     )
+    conn.commit()
     applied = {row[0] for row in conn.execute("SELECT version FROM schema_migrations")}
 
     pending: list[tuple[int, Path]] = []
@@ -49,9 +76,18 @@ def migrate(conn: sqlite3.Connection) -> list[int]:
     done: list[int] = []
     for version, path in pending:
         logger.info("Applying migration %s", path.name)
-        with conn:  # one transaction per migration
-            conn.executescript(path.read_text(encoding="utf-8"))
-            conn.execute("INSERT INTO schema_migrations (version) VALUES (?)", (version,))
+        statements = split_statements(path.read_text(encoding="utf-8"))
+        try:
+            conn.execute("BEGIN")
+            for statement in statements:
+                conn.execute(statement)
+            conn.execute(
+                "INSERT INTO schema_migrations (version) VALUES (?)", (version,)
+            )
+            conn.execute("COMMIT")
+        except BaseException:
+            conn.execute("ROLLBACK")
+            raise
         done.append(version)
     return done
 

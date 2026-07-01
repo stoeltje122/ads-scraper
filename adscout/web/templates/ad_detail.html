@@ -11,7 +11,7 @@
 <p class="source-links">
   <a class="btn btn-primary" href="{{ ad_library_url(ad['ad_archive_id']) }}" target="_blank" rel="noopener">Bekijk in de Meta Ad Library ↗</a>
   {% if ad['snapshot_url'] %}
-  <a class="btn" href="{{ ad['snapshot_url'] }}" target="_blank" rel="noopener">Snapshot ↗</a> <span class="muted">(directe render-link, kan verlopen)</span>
+  <a class="btn" href="/ad/{{ ad['ad_archive_id'] }}/snapshot" target="_blank" rel="noopener">Snapshot ↗</a> <span class="muted">(directe render-link via je eigen token)</span>
   {% endif %}
 </p>
 
@@ -22,7 +22,7 @@
       <dt>Ad Library ID</dt><dd><code>{{ ad['ad_archive_id'] }}</code></dd>
       <dt>Format</dt><dd>{{ format_label(ad['format']) }}</dd>
       <dt>Gestart</dt><dd>{{ ad['ad_delivery_start']|day or '—' }}</dd>
-      <dt>Gestopt</dt><dd>{{ ad['ad_delivery_stop']|day or ('—' if ad['status'] == 'active' else 'onbekend (verdwenen op ' + ad['last_seen'] + ')') }}</dd>
+      <dt>Gestopt</dt><dd>{% if ad['status'] == 'active' %}—{% elif ad['ad_delivery_stop'] %}{{ ad['stop_day'] }}{% else %}onbekend (verdwenen op {{ ad['stop_day'] }}){% endif %}</dd>
       <dt>Eerst gezien</dt><dd>{{ ad['first_seen'] }}</dd>
       <dt>Laatst gezien</dt><dd>{{ ad['last_seen'] }}</dd>
       <dt>EU-bereik (laatst bekend)</dt><dd>{{ ad['eu_reach_latest']|nlnum }}</dd>

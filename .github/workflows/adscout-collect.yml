@@ -42,6 +42,18 @@ jobs:
       - name: Token uit secrets in de omgeving zetten
         run: echo "META_ACCESS_TOKEN=${{ secrets.META_ACCESS_TOKEN }}" >> "$GITHUB_ENV"
 
+      - name: Database controleren (eenmalige bootstrap vereist)
+        # The repo is the persistent storage for this route: the initialized
+        # database (with resolved page_ids) must be committed ONCE from your
+        # own machine — see README "Dagelijkse run instellen", route (b).
+        # Without it every run would start from an empty DB and collect
+        # nothing, forever.
+        run: |
+          if [ ! -f data/adscout.db ]; then
+            echo "::error::data/adscout.db ontbreekt in de repo. Volg de eenmalige bootstrap uit README sectie 'Dagelijkse run instellen' (route b): lokaal 'adscout init' + 'adscout resolve' draaien en daarna 'git add -f data/ && git commit && git push'."
+            exit 1
+          fi
+
       - name: Dagelijkse collect draaien
         # A failing collect must not block the data commit: partial results
         # (and the run record in the `runs` table) are worth keeping.
@@ -60,13 +72,26 @@ jobs:
         # data/ and reports/ are gitignored for local use, hence `git add -f`:
         # in this workflow the repo itself is the persistent storage, so the
         # database, creatives and reports must be committed to keep history.
+        # (Since the DB stores snapshot-URLs token-free, no secret ends up in
+        # the commit — the repo must still be PRIVATE for the competitor data.)
         run: |
           git config user.name "adscout-bot"
           git config user.email "adscout-bot@users.noreply.github.com"
+          mkdir -p data reports
           git add -f data/ reports/
           if git diff --cached --quiet; then
             echo "Geen wijzigingen — niets te committen."
           else
             git commit -m "[data] daily collect $(date -u +%F)"
+            # Retry with rebase: a human push during the run must not cost
+            # us the day's data (non-fast-forward would otherwise fail here).
+            for attempt in 1 2 3; do
+              if git push; then
+                exit 0
+              fi
+              echo "Push poging ${attempt} faalde — rebase en opnieuw…"
+              git pull --rebase
+              sleep 5
+            done
             git push
           fi

@@ -42,6 +42,11 @@ ADS_ARCHIVE_FIELDS = [
 ]
 
 
+def parse_countries(value: str | None) -> list[str]:
+    """The one way to parse a comma-separated country string ('nl, be' → ['NL','BE'])."""
+    return [c.strip().upper() for c in (value or "").split(",") if c.strip()]
+
+
 @dataclass
 class Settings:
     meta_access_token: str = ""
@@ -75,11 +80,7 @@ class Settings:
 def load_settings(env_file: str | os.PathLike | None = None) -> Settings:
     """Load settings from .env (if present) and the environment."""
     load_dotenv(env_file or ".env")
-    countries = [
-        c.strip().upper()
-        for c in os.environ.get("ADSCOUT_DEFAULT_COUNTRIES", "NL").split(",")
-        if c.strip()
-    ]
+    countries = parse_countries(os.environ.get("ADSCOUT_DEFAULT_COUNTRIES", "NL"))
     return Settings(
         meta_access_token=os.environ.get("META_ACCESS_TOKEN", "").strip(),
         graph_version=os.environ.get("META_GRAPH_VERSION", DEFAULT_GRAPH_VERSION).strip()

@@ -188,7 +188,16 @@ Setup:
 
 1. Push dit project naar een **privé** GitHub-repository.
 2. Zet het token als secret: op GitHub **Settings → Secrets and variables → Actions → New repository secret**, naam `META_ACCESS_TOKEN`, waarde je long-lived token uit sectie 3.
-3. Klaar — de workflow draait vanaf nu dagelijks vanzelf. Test hem direct via **Actions → AdScout daily collect → Run workflow**.
+3. **Eenmalige bootstrap van de database.** De cloud-runner heeft je watchlist met bevestigde pagina's nodig; die staat in je lokale database. Draai lokaal eerst `adscout init` en `adscout resolve` voor je concurrenten (sectie 5), en commit daarna de database één keer expliciet mee (hij is normaal gitignored, vandaar `-f`):
+
+   ```bash
+   git add -f data/adscout.db
+   git commit -m "Bootstrap: geïnitialiseerde database met watchlist"
+   git push
+   ```
+
+   Zonder deze stap weigert de workflow bewust te draaien (foutmelding in de Actions-log) — anders zou hij dagelijks "groen" zijn terwijl hij tegen een lege database niets verzamelt.
+4. Klaar — de workflow draait vanaf nu dagelijks vanzelf. Test hem direct via **Actions → AdScout daily collect → Run workflow**.
 
 Hoe het werkt: elke run installeert AdScout op een tijdelijke machine, draait `adscout collect` (en op maandag `adscout report --weekly`) en **commit daarna `data/` en `reports/` terug naar de repo** met een commit als `[data] daily collect 2026-07-01`. De repo zelf is dus de opslag: de SQLite-database en de creatives blijven bewaard en de historie groeit elke dag aan. Wil je de data lokaal bekijken, doe dan eerst `git pull` en start `adscout web`.
 
@@ -341,6 +350,9 @@ Handmatig opzoeken in de Ad Library web-UI:
 3. Klik een advertentie van het juiste merk en klik dan op de paginanaam.
 4. Het page_id staat in de URL van die pagina (of via "Info en advertenties").
 5. Koppelen: `adscout page add "Merk" <page_id> --page-name "Naam"`.
+
+**Ontbrekende thumbnails / creatives**
+Media wordt gedownload zodra een ad voor het eerst gezien wordt; dat is bewust "best effort" (Meta's render-pagina verandert weleens, downloads kunnen falen). Het dashboard valt dan terug op de Ad Library-link. Alsnog proberen te downloaden voor ads zonder media: `adscout creatives backfill`. Let op: voor al lang gestopte ads kan de snapshot bij Meta zelf verlopen zijn — dan blijft alleen de Ad Library-link over.
 
 **"database is locked"**
 SQLite laat maar één schrijver tegelijk toe. Dit gebeurt vrijwel alleen als het dashboard openstaat terwijl `adscout collect` draait. Oplossing: dashboard sluiten (Ctrl+C) en het commando **gewoon opnieuw draaien**. Er gaat niets verloren.
