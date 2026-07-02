@@ -1,0 +1,31 @@
+{
+  "reviews": [
+    {
+      "id": "bol-own-001",
+      "stars": 5,
+      "text": "Heerlijk product. Ik val sneller in slaap en de capsules zijn goed te slikken. Netjes verpakt, snel in huis via bol.",
+      "author": "M. de Vries",
+      "date": "2026-06-25",
+      "language": "nl",
+      "url": "https://www.bol.com/nl/nl/p/cloudplunge-slaapsupplement/"
+    },
+    {
+      "id": "bol-own-002",
+      "stars": 3,
+      "text": "Doet wat het belooft maar vind het aan de prijzige kant vergeleken met andere slaapsupplementen.",
+      "author": "T. Janssen",
+      "date": "2026-06-20",
+      "language": "nl",
+      "url": "https://www.bol.com/nl/nl/p/cloudplunge-slaapsupplement/"
+    },
+    {
+      "id": "bol-own-003",
+      "stars": 1,
+      "text": "Na twee dagen gebruik hoofdpijn gekregen, daarna gestopt. Kan toeval zijn maar voor mij dus niets.",
+      "author": "W. Verhoeven",
+      "date": "2026-06-28",
+      "language": "nl",
+      "url": "https://www.bol.com/nl/nl/p/cloudplunge-slaapsupplement/"
+    }
+  ]
+}

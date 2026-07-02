@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}Beheer{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Beheer</h1>
+</div>
+
+{% if msg %}<div class="flash flash-ok">✓ {{ msg }}</div>{% endif %}
+{% if error %}<div class="flash flash-error">✗ {{ error }}</div>{% endif %}
+
+<section class="panel">
+  <h2>Bronnen</h2>
+  <table class="table">
+    <tr><th>Bron</th><th>Status</th><th>Items</th><th>Laatste run</th><th></th></tr>
+    {% for s in sources %}
+    <tr>
+      <td>{{ s['name'] }}
+        {% if s['config_json'] %}{% set cfg = s['config_json'] | fromjson %}{% endif %}
+      </td>
+      <td><span class="chip chip-status-{{ s['status'] }}">{{ status_labels[s['status']] }}</span></td>
+      <td>{{ s['n_items'] }}{% if s['n_unanalyzed'] %} <span class="muted">({{ s['n_unanalyzed'] }} in wachtrij)</span>{% endif %}</td>
+      <td class="muted">{{ s['last_run'] or 'nooit' }}</td>
+      <td>
+        {% if s['type'] != 'manual' %}
+        <form method="post" action="/beheer/source/{{ s['id'] }}/status" class="inline-form">
+          {% if s['status'] == 'active' %}
+            <input type="hidden" name="status" value="paused">
+            <button class="btn btn-quiet">pauzeer</button>
+          {% else %}
+            <input type="hidden" name="status" value="active">
+            <button class="btn btn-quiet">activeer</button>
+          {% endif %}
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  <p class="muted">Credentials instellen (Gmail, Meta) doe je eenmalig via de terminal — zie PULSE.md.
+     Trustpilot/bol hebben bewust geen automatische route (geen gratis API); importeer die reviews via <a href="/import">Import</a>.</p>
+</section>
+
+<section class="panel">
+  <h2>Concurrenten</h2>
+  <table class="table">
+    <tr><th>Naam</th><th>Categorie</th><th>Items</th><th>Review-URL's</th><th></th></tr>
+    {% for c in competitors %}
+    <tr>
+      <td>{{ c['name'] }}{% if c['status'] != 'active' %} <span class="chip">gepauzeerd</span>{% endif %}</td>
+      <td class="muted">{{ c['category'] or '—' }}</td>
+      <td>{{ c['n_items'] }}</td>
+      <td class="muted">{{ (c['review_urls_json'] | fromjson) | length }} URL('s)</td>
+      <td><details>
+        <summary>bewerk</summary>
+        <form method="post" action="/beheer/competitor/{{ c['id'] }}/update" class="stack-form">
+          <label>Categorie <input name="category" value="{{ c['category'] or '' }}"></label>
+          <label>Notities <input name="notes" value="{{ c['notes'] or '' }}"></label>
+          <label>Review-URL's (één per regel)
+            <textarea name="review_urls" rows="3">{{ (c['review_urls_json'] | fromjson) | join('\n') }}</textarea>
+          </label>
+          <button class="btn">Opslaan</button>
+        </form>
+        <form method="post" action="/beheer/competitor/{{ c['id'] }}/status" class="inline-form">
+          <input type="hidden" name="status" value="{{ 'paused' if c['status'] == 'active' else 'active' }}">
+          <button class="btn btn-quiet">{{ 'pauzeer' if c['status'] == 'active' else 'activeer' }}</button>
+        </form>
+      </details></td>
+    </tr>
+    {% endfor %}
+  </table>
+  <form method="post" action="/beheer/competitor/add" class="inline-form">
+    <input name="name" placeholder="Nieuwe concurrent…" required>
+    <input name="category" placeholder="categorie (optioneel)">
+    <button class="btn">Toevoegen</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Thema's <span class="muted">(gebruikt door de AI-analyse)</span></h2>
+  <table class="table">
+    <tr><th>Slug</th><th>Beschrijving</th><th></th></tr>
+    {% for t in themes %}
+    <tr class="{{ 'muted' if t['status'] == 'archived' else '' }}">
+      <td><code>{{ t['slug'] }}</code>{% if t['status'] == 'archived' %} (gearchiveerd){% endif %}</td>
+      <td>{{ t['description'] or '' }}</td>
+      <td>
+        <form method="post" action="/beheer/theme/{{ t['id'] }}/status" class="inline-form">
+          <input type="hidden" name="status" value="{{ 'archived' if t['status'] == 'active' else 'active' }}">
+          <button class="btn btn-quiet">{{ 'archiveer' if t['status'] == 'active' else 'heractiveer' }}</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  <form method="post" action="/beheer/theme/add" class="inline-form">
+    <input name="slug" placeholder="nieuw-thema-slug" required>
+    <input name="description" placeholder="beschrijving (helpt de AI)" size="40">
+    <button class="btn">Toevoegen</button>
+  </form>
+</section>
+
+<div class="two-col">
+<section class="panel">
+  <h2>Retentie (AVG)</h2>
+  <p class="muted">Items ouder dan dit worden automatisch verwijderd bij de dagelijkse run.</p>
+  <form method="post" action="/beheer/retentie" class="inline-form">
+    <label>Bewaar <input type="number" name="months" value="{{ retention }}" min="1" max="120" style="width:5em"> maanden</label>
+    <button class="btn">Opslaan</button>
+  </form>
+</section>
+
+<section class="panel danger-zone">
+  <h2>Iemand vergeten (AVG)</h2>
+  <p class="muted">Verwijdert álle items van één persoon, definitief. Plak het e-mailadres of de auteur-code (zie item-detail).</p>
+  <form method="post" action="/beheer/vergeten" class="stack-form">
+    <input name="who" placeholder="naam@voorbeeld.nl of auteur-code" required>
+    <label class="checkline"><input type="checkbox" name="bevestig" value="ja"> Ja, definitief verwijderen</label>
+    <button class="btn btn-danger">Vergeet deze persoon</button>
+  </form>
+</section>
+</div>
+
+<section class="panel">
+  <h2>Analyse &amp; runs</h2>
+  <p>{{ summary.items }} items · {{ summary.analyzed }} geanalyseerd · {{ summary.queue }} in wachtrij
+     {% if summary.failed %} · <span class="warn">{{ summary.failed }} wachten op heranalyse</span>{% endif %}</p>
+  {% if failed %}
+  <details>
+    <summary>Items die niet geanalyseerd konden worden ({{ failed | length }})</summary>
+    <ul>
+      {% for f in failed %}
+      <li><a href="/item/{{ f['id'] }}">item {{ f['id'] }}</a> — {{ f['analysis_attempts'] }} poging(en): <span class="muted">{{ f['analysis_error'] }}</span></li>
+      {% endfor %}
+    </ul>
+    <p class="muted">Draai <code>pulse analyze</code> om het opnieuw te proberen; ze worden nooit stilletjes overgeslagen.</p>
+  </details>
+  {% endif %}
+  <table class="table">
+    <tr><th>Run</th><th>Soort</th><th>Gestart</th><th>Resultaat</th></tr>
+    {% for run in runs %}
+    <tr>
+      <td>#{{ run['id'] }}</td>
+      <td>{{ run['kind'] }}</td>
+      <td class="muted">{{ run['started_at'] }}</td>
+      <td>{{ 'OK' if run['ok'] else 'MET FOUTEN' }} — {{ run['items_seen'] }} gezien, {{ run['items_new'] }} nieuw, {{ run['items_analyzed'] }} geanalyseerd{% if run['items_deleted'] %}, {{ run['items_deleted'] }} opgeschoond{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+
+<section class="panel">
+  <h2>Weekrapporten</h2>
+  {% if not digests %}<p class="muted">Nog geen rapporten — draai <code>pulse report --weekly</code>.</p>{% endif %}
+  <ul>
+    {% for d in digests %}
+    <li>{{ d['period_start'] }} t/m {{ d['period_end'] }} —
+      <a href="/rapporten/{{ d['html_path'].split('/')[-1] }}">bekijk</a>
+      <span class="muted">(ook als Markdown in reports/)</span></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

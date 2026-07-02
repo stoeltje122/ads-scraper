@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>nl.cloudplunge.pulse</string>
+
+    <!-- REPLACE: change every "/REPLACE/PAD/NAAR/ads-scraper" below (3x)
+         to the absolute path of your ads-scraper folder,
+         e.g. /Users/anna/ads-scraper.
+         See PULSE.md, section "Automatisch draaien". -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/REPLACE/PAD/NAAR/ads-scraper/ops/pulse-cron.sh</string>
+    </array>
+
+    <!-- Daily at 07:30 local time (AdScout runs at 07:00; staggered so the
+         two tools never fight over the laptop at the same moment). If the
+         Mac is asleep, launchd runs the job as soon as it wakes up. -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>7</integer>
+        <key>Minute</key>
+        <integer>30</integer>
+    </dict>
+
+    <!-- launchd's own stdout/stderr capture. The script itself also logs
+         to logs/cron.log; these files catch anything before that starts. -->
+    <key>StandardOutPath</key>
+    <string>/REPLACE/PAD/NAAR/ads-scraper/logs/launchd.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/REPLACE/PAD/NAAR/ads-scraper/logs/launchd.err.log</string>
+</dict>
+</plist>

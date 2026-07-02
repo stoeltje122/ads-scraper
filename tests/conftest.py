@@ -116,3 +116,75 @@ def collected_db(seeded_db, fixture_source, run_collect):
     """Seeded database after one collect run on RUN_DAY (plus the run result)."""
     result = run_collect(seeded_db, fixture_source)
     return seeded_db, result
+
+
+# ── Pulse fixtures ───────────────────────────────────────────────────
+# Pulse shares this conftest (a second conftest.py in tests/pulse/ would
+# shadow the module name "conftest" that the AdScout tests import from).
+# Fixture names are prefixed pulse_* to avoid clashing with the AdScout
+# fixtures above; constants live in tests/pulse/helpers_pulse.py.
+
+PULSE_FIXTURE_DIR = TESTS_DIR / "fixtures" / "pulse"
+
+
+@pytest.fixture(autouse=True)
+def _isolated_pulse_env(monkeypatch, tmp_path):
+    """Never touch the repo's real data/ dir or a developer's .env."""
+    monkeypatch.setenv("PULSE_DATA_DIR", str(tmp_path / "pulse-data"))
+    for var in (
+        "PULSE_MAILBOX",
+        "PULSE_MAIL_BACKFILL_DAYS",
+        "PULSE_META_PAGE_ID",
+        "META_PAGE_TOKEN",
+        "PULSE_ANTHROPIC_MODEL",
+    ):
+        monkeypatch.delenv(var, raising=False)
+
+
+@pytest.fixture
+def pulse_settings(tmp_path):
+    from pulse.config import Settings
+
+    return Settings(data_dir=tmp_path / "pulse-data")
+
+
+@pytest.fixture
+def pulse_db(tmp_path):
+    """A fresh, fully migrated Pulse database in a temporary directory."""
+    from pulse.db import open_db
+
+    conn = open_db(tmp_path / "test-pulse.db")
+    yield conn
+    conn.close()
+
+
+@pytest.fixture
+def pulse_seeded_db(pulse_db):
+    """Sources + themes + competitors seeded from the real seed files."""
+    from pulse import store as pulse_store
+
+    pulse_store.seed_sources(pulse_db)
+    pulse_store.seed_themes(pulse_db, REPO_ROOT / "pulse-taxonomy.seed.yaml")
+    pulse_store.seed_competitors(pulse_db, REPO_ROOT / "competitors.seed.yaml")
+    return pulse_db
+
+
+@pytest.fixture
+def pulse_demo_db(pulse_seeded_db, pulse_settings):
+    """The exact state `pulse demo` produces: fixture collect + competitor
+    CSV import + canned analyses."""
+    from pulse import analysis as pulse_analysis
+    from pulse import collector as pulse_collector
+    from pulse.sources import manual as pulse_manual
+
+    pulse_collector.collect(pulse_seeded_db, pulse_settings, fixture_dir=PULSE_FIXTURE_DIR)
+    pulse_collector.import_items(
+        pulse_seeded_db,
+        pulse_manual.parse_file(PULSE_FIXTURE_DIR / "competitor_reviews.csv"),
+    )
+    pulse_analysis.analyze_pending(
+        pulse_seeded_db,
+        pulse_settings,
+        analyzer=pulse_analysis.CannedAnalyzer(PULSE_FIXTURE_DIR),
+    )
+    return pulse_seeded_db

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Kansen{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Concurrent-kansen</h1>
+  <p class="lead">
+    Waar klagen klanten van concurrenten structureel over — en welke
+    advertentie-invalshoek volgt daaruit voor Cloudplunge? Combineer dit met
+    wat AdScout laat zien over hun advertenties.
+  </p>
+</div>
+
+{% if not insights %}
+  <div class="empty-state">
+    <p>Nog geen concurrent-feedback verzameld.</p>
+    <p class="muted">Plak reviews via <a href="/import">Import</a> (kies daar de concurrent) — ze worden automatisch geanalyseerd op pluspunten en klachten.</p>
+  </div>
+{% endif %}
+
+{% for ins in insights %}
+<section class="panel competitor-panel">
+  <h2>{{ ins.competitor['name'] }}
+    <span class="muted">{{ ins.n_items }} item(s){% if ins.competitor['category'] %} · {{ ins.competitor['category'] }}{% endif %}</span>
+  </h2>
+  {% if ins.n_analyzed %}
+    <p class="muted">Sentiment: {{ ins.sentiments.get('positive', 0) }} positief · {{ ins.sentiments.get('neutral', 0) }} neutraal · {{ ins.sentiments.get('negative', 0) }} negatief
+      {% if ins.top_themes %} · thema's: {% for slug, n in ins.top_themes %}{{ theme_label(slug) }} ({{ n }}){% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
+    </p>
+    <div class="two-col">
+      <div>
+        <h3>Terugkerende klachten</h3>
+        {% if not ins.cons %}<p class="muted">Geen klachten gevonden.</p>{% endif %}
+        <ul>{% for con in ins.cons %}<li>{{ con }}</li>{% endfor %}</ul>
+      </div>
+      <div>
+        <h3>Genoemde pluspunten</h3>
+        {% if not ins.pros %}<p class="muted">Geen pluspunten gevonden.</p>{% endif %}
+        <ul>{% for pro in ins.pros %}<li>{{ pro }}</li>{% endfor %}</ul>
+      </div>
+    </div>
+    {% if ins.cons %}
+      <p class="insight">💡 <strong>Invalshoek:</strong> klanten van {{ ins.competitor['name'] }} lopen hier tegenaan —
+        laat in een advertentie of op de productpagina zien hoe Cloudplunge dit beter doet.
+        <a href="/inbox?over={{ ins.competitor['id'] }}">Bekijk alle items ›</a></p>
+    {% endif %}
+  {% else %}
+    <p class="muted">{{ ins.n_items }} item(s) verzameld, nog niet geanalyseerd — draai <code>pulse analyze</code>.</p>
+  {% endif %}
+</section>
+{% endfor %}
+
+{% if empty_competitors %}
+<section class="panel">
+  <h2>Nog zonder data</h2>
+  <p class="muted">
+    {% for ins in empty_competitors %}{{ ins.competitor['name'] }}{% if not loop.last %} · {% endif %}{% endfor %}
+  </p>
+  <p class="muted">Review-URL's per concurrent vastleggen kan onder <a href="/beheer">Beheer</a>; reviews importeren via <a href="/import">Import</a>.</p>
+</section>
+{% endif %}
+{% endblock %}

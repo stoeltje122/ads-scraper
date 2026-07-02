@@ -1,0 +1,516 @@
+{
+  "messages": [
+    {
+      "id": "msg-health-01",
+      "threadId": "thread-health-01",
+      "labelIds": [
+        "INBOX"
+      ],
+      "snippet": "Beste Cloudplunge, Ik gebruik jullie capsules nu vijf dagen en sinds gisteren heb ik last van hartkl",
+      "internalDate": "1782807164000",
+      "payload": {
+        "mimeType": "multipart/alternative",
+        "headers": [
+          {
+            "name": "From",
+            "value": "Marijke de Boer <marijke.deboer@ziggo.nl>"
+          },
+          {
+            "name": "To",
+            "value": "Cloudplunge <info@cloudplunge.com>"
+          },
+          {
+            "name": "Subject",
+            "value": "Hartkloppingen na inname"
+          },
+          {
+            "name": "Date",
+            "value": "Tue, 30 Jun 2026 08:12:44 +0000"
+          }
+        ],
+        "body": {
+          "size": 0
+        },
+        "parts": [
+          {
+            "mimeType": "text/plain",
+            "body": {
+              "size": 294,
+              "data": "QmVzdGUgQ2xvdWRwbHVuZ2UsCgpJayBnZWJydWlrIGp1bGxpZSBjYXBzdWxlcyBudSB2aWpmIGRhZ2VuIGVuIHNpbmRzIGdpc3RlcmVuIGhlYiBpayBsYXN0IHZhbiBoYXJ0a2xvcHBpbmdlbiBhbHMgaWsgbmFhciBiZWQgZ2EuIElrIHZvZWwgbWUgZXIgbmlldCBsZWtrZXIgYmlqIGVuIGJlbiBlciBvb2sgZWVuIGJlZXRqZSBtaXNzZWxpamsgdmFuLiBLYW4gZGl0IGRvb3IgZGUgY2Fwc3VsZXMga29tZW4_IElrIGR1cmYgemUgbnUgZXZlbiBuaWV0IG1lZXIgdGUgbmVtZW4uCgpHcm9ldCwKTWFyaWprZSBkZSBCb2Vy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "msg-mel-01",
+      "threadId": "thread-mel-01",
+      "labelIds": [
+        "INBOX"
+      ],
+      "snippet": "Hoi! Ik zag jullie advertentie voorbijkomen. Zit er melatonine in Cloudplunge? Ik werd altijd zo suf",
+      "internalDate": "1782762062000",
+      "payload": {
+        "mimeType": "multipart/alternative",
+        "headers": [
+          {
+            "name": "From",
+            "value": "Sandra Vermeulen <s.vermeulen74@gmail.com>"
+          },
+          {
+            "name": "To",
+            "value": "Cloudplunge <info@cloudplunge.com>"
+          },
+          {
+            "name": "Subject",
+            "value": "Vraag over melatonine"
+          },
+          {
+            "name": "Date",
+            "value": "Mon, 29 Jun 2026 19:41:02 +0000"
+          }
+        ],
+        "body": {
+          "size": 0
+        },
+        "parts": [
+          {
+            "mimeType": "text/plain",
+            "body": {
+              "size": 199,
+              "data": "SG9pIQoKSWsgemFnIGp1bGxpZSBhZHZlcnRlbnRpZSB2b29yYmlqa29tZW4uIFppdCBlciBtZWxhdG9uaW5lIGluIENsb3VkcGx1bmdlPyBJayB3ZXJkIGFsdGlqZCB6byBzdWYgdmFuIG1lbGF0b25pbmV0YWJsZXR0ZW4sIGR1cyBpayBob29wIGVpZ2VubGlqayB2YW4gbmlldC4gV2F0IHppdCBlciBkYW4gd8OpbCBpbj8KCkdyb2V0amVzLCBTYW5kcmE"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "msg-lev-01",
+      "threadId": "thread-lev-01",
+      "labelIds": [
+        "INBOX"
+      ],
+      "snippet": "Goedemorgen, Op 20 juni heb ik besteld (ordernummer 2841) en betaald, maar ik heb nog niets ontvange",
+      "internalDate": "1782554598000",
+      "payload": {
+        "mimeType": "multipart/alternative",
+        "headers": [
+          {
+            "name": "From",
+            "value": "Ingrid Jansen <ingrid.jansen@hotmail.com>"
+          },
+          {
+            "name": "To",
+            "value": "Cloudplunge <info@cloudplunge.com>"
+          },
+          {
+            "name": "Subject",
+            "value": "Bestelling #2841 niet ontvangen"
+          },
+          {
+            "name": "Date",
+            "value": "Sat, 27 Jun 2026 10:03:18 +0000"
+          }
+        ],
+        "body": {
+          "size": 0
+        },
+        "parts": [
+          {
+            "mimeType": "text/plain",
+            "body": {
+              "size": 202,
+              "data": "R29lZGVtb3JnZW4sCgpPcCAyMCBqdW5pIGhlYiBpayBiZXN0ZWxkIChvcmRlcm51bW1lciAyODQxKSBlbiBiZXRhYWxkLCBtYWFyIGlrIGhlYiBub2cgbmlldHMgb250dmFuZ2VuLiBEZSB0cmFjayAmIHRyYWNlIGRvZXQgaGV0IG5pZXQuIEt1bm5lbiBqdWxsaWUgdWl0em9la2VuIHdhYXIgbWlqbiBwYWtrZXRqZSBpcz8KCk12ZywgSW5ncmlkIEphbnNlbg"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "msg-lev-02",
+      "threadId": "thread-lev-01",
+      "labelIds": [
+        "INBOX"
+      ],
+      "snippet": "Inmiddels drie dagen verder en nog steeds niets ontvangen én geen reactie van jullie. Dit vind ik ec",
+      "internalDate": "1782838075000",
+      "payload": {
+        "mimeType": "multipart/alternative",
+        "headers": [
+          {
+            "name": "From",
+            "value": "Ingrid Jansen <ingrid.jansen@hotmail.com>"
+          },
+          {
+            "name": "To",
+            "value": "Cloudplunge <info@cloudplunge.com>"
+          },
+          {
+            "name": "Subject",
+            "value": "Re: Bestelling #2841 niet ontvangen"
+          },
+          {
+            "name": "Date",
+            "value": "Tue, 30 Jun 2026 16:47:55 +0000"
+          }
+        ],
+        "body": {
+          "size": 0
+        },
+        "parts": [
+          {
+            "mimeType": "text/plain",
+            "body": {
+              "size": 204,
+              "data": "SW5taWRkZWxzIGRyaWUgZGFnZW4gdmVyZGVyIGVuIG5vZyBzdGVlZHMgbmlldHMgb250dmFuZ2VuIMOpbiBnZWVuIHJlYWN0aWUgdmFuIGp1bGxpZS4gRGl0IHZpbmQgaWsgZWNodCBuaWV0IGt1bm5lbiB2b29yIHpvJ24gZHV1ciBwcm9kdWN0LiBBbHMgaGV0IHBha2tldCBlciB2cmlqZGFnIG5pZXQgaXMgd2lsIGlrIG1pam4gZ2VsZCB0ZXJ1Zy4KCkluZ3JpZA"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "msg-reply-01",
+      "threadId": "thread-lev-01",
+      "labelIds": [
+        "INBOX"
+      ],
+      "snippet": "Beste Ingrid, wat vervelend! We zoeken het direct uit en komen er morgen op terug. Hartelijke groet,",
+      "internalDate": "1782840000000",
+      "payload": {
+        "mimeType": "multipart/alternative",
+        "headers": [
+          {
+            "name": "From",
+            "value": "Cloudplunge Support <info@cloudplunge.com>"
+          },
+          {
+            "name": "To",
+            "value": "Cloudplunge <info@cloudplunge.com>"
+          },
+          {
+            "name": "Subject",
+            "value": "Re: Bestelling #2841 niet ontvangen"
+          },
+          {
+            "name": "Date",
+            "value": "Tue, 30 Jun 2026 17:20:00 +0000"
+          }
+        ],
+        "body": {
+          "size": 0
+        },
+        "parts": [
+          {
+            "mimeType": "text/plain",
+            "body": {
+              "size": 108,
+              "data": "QmVzdGUgSW5ncmlkLCB3YXQgdmVydmVsZW5kISBXZSB6b2VrZW4gaGV0IGRpcmVjdCB1aXQgZW4ga29tZW4gZXIgbW9yZ2VuIG9wIHRlcnVnLgoKSGFydGVsaWprZSBncm9ldCwgS3lsaWFu"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "msg-comp-01",
+      "threadId": "thread-comp-01",
+      "labelIds": [
+        "INBOX"
+      ],
+      "snippet": "Lieve mensen van Cloudplunge, Na jaren slecht inslapen val ik nu binnen een kwartier in slaap. Ik wa",
+      "internalDate": "1782335731000",
+      "payload": {
+        "mimeType": "multipart/alternative",
+        "headers": [
+          {
+            "name": "From",
+            "value": "Els van Dijk <els.vandijk56@kpnmail.nl>"
+          },
+          {
+            "name": "To",
+            "value": "Cloudplunge <info@cloudplunge.com>"
+          },
+          {
+            "name": "Subject",
+            "value": "Eindelijk weer slapen!"
+          },
+          {
+            "name": "Date",
+            "value": "Wed, 24 Jun 2026 21:15:31 +0000"
+          }
+        ],
+        "body": {
+          "size": 0
+        },
+        "parts": [
+          {
+            "mimeType": "text/plain",
+            "body": {
+              "size": 200,
+              "data": "TGlldmUgbWVuc2VuIHZhbiBDbG91ZHBsdW5nZSwKCk5hIGphcmVuIHNsZWNodCBpbnNsYXBlbiB2YWwgaWsgbnUgYmlubmVuIGVlbiBrd2FydGllciBpbiBzbGFhcC4gSWsgd2FzIHNjZXB0aXNjaCBtYWFyIGJlbiBvbSEgTWlqbiB6dXMgaGVlZnQgaW5taWRkZWxzIG9vayBlZW4gcG90amUgYmVzdGVsZC4gRGFuayBqdWxsaWUgd2VsLgoKRWxzICg1Mik"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "msg-dos-01",
+      "threadId": "thread-dos-01",
+      "labelIds": [
+        "INBOX"
+      ],
+      "snippet": "Hallo, Moet ik de capsules vlak voor het slapen innemen of eerder op de avond? En is 1 capsule genoe",
+      "internalDate": "1782050289000",
+      "payload": {
+        "mimeType": "multipart/alternative",
+        "headers": [
+          {
+            "name": "From",
+            "value": "Petra Willems <petra.willems@outlook.com>"
+          },
+          {
+            "name": "To",
+            "value": "Cloudplunge <info@cloudplunge.com>"
+          },
+          {
+            "name": "Subject",
+            "value": "Wanneer innemen?"
+          },
+          {
+            "name": "Date",
+            "value": "Sun, 21 Jun 2026 13:58:09 +0000"
+          }
+        ],
+        "body": {
+          "size": 0
+        },
+        "parts": [
+          {
+            "mimeType": "text/plain",
+            "body": {
+              "size": 138,
+              "data": "SGFsbG8sCgpNb2V0IGlrIGRlIGNhcHN1bGVzIHZsYWsgdm9vciBoZXQgc2xhcGVuIGlubmVtZW4gb2YgZWVyZGVyIG9wIGRlIGF2b25kPyBFbiBpcyAxIGNhcHN1bGUgZ2Vub2VnIG9mIG1hZyBpayBlciAyIG5lbWVuPwoKR3JvZXQsIFBldHJh"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "msg-med-01",
+      "threadId": "thread-med-01",
+      "labelIds": [
+        "INBOX"
+      ],
+      "snippet": "Goedemorgen, Ik gebruik sinds kort antidepressiva (sertraline). Kan ik Cloudplunge daar veilig naast",
+      "internalDate": "1782891372000",
+      "payload": {
+        "mimeType": "multipart/alternative",
+        "headers": [
+          {
+            "name": "From",
+            "value": "Anneke Smit <anneke.smit1968@gmail.com>"
+          },
+          {
+            "name": "To",
+            "value": "Cloudplunge <info@cloudplunge.com>"
+          },
+          {
+            "name": "Subject",
+            "value": "Gebruik met antidepressiva?"
+          },
+          {
+            "name": "Date",
+            "value": "Wed, 01 Jul 2026 07:36:12 +0000"
+          }
+        ],
+        "body": {
+          "size": 0
+        },
+        "parts": [
+          {
+            "mimeType": "text/plain",
+            "body": {
+              "size": 237,
+              "data": "R29lZGVtb3JnZW4sCgpJayBnZWJydWlrIHNpbmRzIGtvcnQgYW50aWRlcHJlc3NpdmEgKHNlcnRyYWxpbmUpLiBLYW4gaWsgQ2xvdWRwbHVuZ2UgZGFhciB2ZWlsaWcgbmFhc3QgZ2VicnVpa2VuLCBvZiB6aXQgZXIgaWV0cyBpbiBkYXQgZWVuIHdpc3NlbHdlcmtpbmcga2FuIGdldmVuPyBNaWpuIGh1aXNhcnRzIGtlbmRlIGp1bGxpZSBwcm9kdWN0IG5pZXQuCgpWcmllbmRlbGlqa2UgZ3JvZXQsIEFubmVrZSBTbWl0"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "msg-news-01",
+      "threadId": "thread-news-01",
+      "labelIds": [
+        "INBOX"
+      ],
+      "snippet": "Bekijk uw winkelprestaties van deze week in het dashboard.",
+      "internalDate": "1782626400000",
+      "payload": {
+        "mimeType": "multipart/alternative",
+        "headers": [
+          {
+            "name": "From",
+            "value": "Shopify <nieuwsbrief@shopify.com>"
+          },
+          {
+            "name": "To",
+            "value": "Cloudplunge <info@cloudplunge.com>"
+          },
+          {
+            "name": "Subject",
+            "value": "Uw weekoverzicht: 12 nieuwe bestellingen"
+          },
+          {
+            "name": "Date",
+            "value": "Sun, 28 Jun 2026 06:00:00 +0000"
+          },
+          {
+            "name": "List-Unsubscribe",
+            "value": "<https://shopify.com/unsub>"
+          },
+          {
+            "name": "Precedence",
+            "value": "bulk"
+          }
+        ],
+        "body": {
+          "size": 0
+        },
+        "parts": [
+          {
+            "mimeType": "text/plain",
+            "body": {
+              "size": 58,
+              "data": "QmVraWprIHV3IHdpbmtlbHByZXN0YXRpZXMgdmFuIGRlemUgd2VlayBpbiBoZXQgZGFzaGJvYXJkLg"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "msg-retour-01",
+      "threadId": "thread-retour-01",
+      "labelIds": [
+        "INBOX"
+      ],
+      "snippet": "Beste klantenservice, Op de site staat een geld-terug-garantie. Hoe werkt dat precies als het produc",
+      "internalDate": "1781781767000",
+      "payload": {
+        "mimeType": "multipart/alternative",
+        "headers": [
+          {
+            "name": "From",
+            "value": "Joke Bakker <joke.bakker@planet.nl>"
+          },
+          {
+            "name": "To",
+            "value": "Cloudplunge <info@cloudplunge.com>"
+          },
+          {
+            "name": "Subject",
+            "value": "Retour en geld-terug-garantie"
+          },
+          {
+            "name": "Date",
+            "value": "Thu, 18 Jun 2026 11:22:47 +0000"
+          }
+        ],
+        "body": {
+          "size": 0
+        },
+        "parts": [
+          {
+            "mimeType": "text/plain",
+            "body": {
+              "size": 215,
+              "data": "QmVzdGUga2xhbnRlbnNlcnZpY2UsCgpPcCBkZSBzaXRlIHN0YWF0IGVlbiBnZWxkLXRlcnVnLWdhcmFudGllLiBIb2Ugd2Vya3QgZGF0IHByZWNpZXMgYWxzIGhldCBwcm9kdWN0IGJpaiBtaWogbmlldCB3ZXJrdD8gTW9ldCBpayBoZXQgcG90amUgZGFuIHRlcnVnc3R1cmVuLCBvb2sgYWxzIGhldCBsZWVnIGlzPwoKTWV0IHZyaWVuZGVsaWprZSBncm9ldCwgSm9rZSBCYWtrZXI"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "msg-html-01",
+      "threadId": "thread-html-01",
+      "labelIds": [
+        "INBOX"
+      ],
+      "snippet": "<html><body><p>Hallo,</p><p>Ik vind de capsules eerlijk gezegd <b>erg groot</b> om door te slikken. ",
+      "internalDate": "1781546726000",
+      "payload": {
+        "mimeType": "multipart/alternative",
+        "headers": [
+          {
+            "name": "From",
+            "value": "Femke Mulder <femkemulder@icloud.com>"
+          },
+          {
+            "name": "To",
+            "value": "Cloudplunge <info@cloudplunge.com>"
+          },
+          {
+            "name": "Subject",
+            "value": "Capsules erg groot"
+          },
+          {
+            "name": "Date",
+            "value": "Mon, 15 Jun 2026 18:05:26 +0000"
+          }
+        ],
+        "body": {
+          "size": 0
+        },
+        "parts": [
+          {
+            "mimeType": "text/html",
+            "body": {
+              "size": 200,
+              "data": "PGh0bWw-PGJvZHk-PHA-SGFsbG8sPC9wPjxwPklrIHZpbmQgZGUgY2Fwc3VsZXMgZWVybGlqayBnZXplZ2QgPGI-ZXJnIGdyb290PC9iPiBvbSBkb29yIHRlIHNsaWtrZW4uIFppam4gZXIgcGxhbm5lbiB2b29yIGVlbiBrbGVpbmVyZSB2YXJpYW50IG9mIGVlbiBwb2VkZXJ2b3JtPzwvcD48cD5Hcm9ldCw8YnI-RmVta2U8L3A-PC9ib2R5PjwvaHRtbD4"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "msg-quote-01",
+      "threadId": "thread-mel-01",
+      "labelIds": [
+        "INBOX"
+      ],
+      "snippet": "Dank voor de snelle reactie! Fijn dat er geen melatonine in zit. Dan bestel ik vandaag een potje. We",
+      "internalDate": "1782810873000",
+      "payload": {
+        "mimeType": "multipart/alternative",
+        "headers": [
+          {
+            "name": "From",
+            "value": "Sandra Vermeulen <s.vermeulen74@gmail.com>"
+          },
+          {
+            "name": "To",
+            "value": "Cloudplunge <info@cloudplunge.com>"
+          },
+          {
+            "name": "Subject",
+            "value": "Re: Vraag over melatonine"
+          },
+          {
+            "name": "Date",
+            "value": "Tue, 30 Jun 2026 09:14:33 +0000"
+          }
+        ],
+        "body": {
+          "size": 0
+        },
+        "parts": [
+          {
+            "mimeType": "text/plain",
+            "body": {
+              "size": 334,
+              "data": "RGFuayB2b29yIGRlIHNuZWxsZSByZWFjdGllISBGaWpuIGRhdCBlciBnZWVuIG1lbGF0b25pbmUgaW4geml0LiBEYW4gYmVzdGVsIGlrIHZhbmRhYWcgZWVuIHBvdGplLiBXZXJrdCBkZSBrb3J0aW5nc2NvZGUgV0VMS09NMTAgbm9nPwoKR3JvZXRqZXMsIFNhbmRyYQoKT3AgMjkganVuaSAyMDI2IG9tIDIwOjE1IHNjaHJlZWYgQ2xvdWRwbHVuZ2UgU3VwcG9ydDoKPiBIb2kgU2FuZHJhLCBnb2VkZSB2cmFhZyEgQ2xvdWRwbHVuZ2UgYmV2YXQgYmV3dXN0IGdlZW4gbWVsYXRvbmluZS4KPiBJbiBwbGFhdHMgZGFhcnZhbiBnZWJydWlrZW4gd2UgZWVuIG5hdHV1cmxpamtlIGZvcm11bGUuCg"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

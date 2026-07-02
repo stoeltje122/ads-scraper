@@ -1,0 +1,127 @@
+# Pulse dagelijkse verzamel- en analyse-run op GitHub Actions.
+# LET OP: alleen gebruiken op een PRIVE repository — de workflow commit de
+# SQLite-database met klantfeedback (persoonsgegevens!) terug naar de repo.
+# Het Gmail-token gaat NIET in git: dat leeft als Actions-secret.
+#
+# Standaard staat de schedule UIT (uitgecommentarieerd): deze route vereist
+# eenmalige lokale bootstrap + secrets. Setup:
+#   1. Lokaal: pulse init, Gmail koppelen (PULSE.md sectie 4) en één keer
+#      `pulse collect` draaien. Commit daarna alleen de database:
+#      git add -f data/pulse.db && git commit -m "bootstrap pulse data" && git push
+#   2. Secrets zetten (Settings → Secrets and variables → Actions):
+#      GMAIL_TOKEN_JSON  = de volledige inhoud van data/gmail/token.json
+#      META_PAGE_TOKEN, PULSE_META_PAGE_ID, ANTHROPIC_API_KEY (optioneel).
+#   3. De twee cron-regels hieronder ont-commentariëren.
+name: Pulse daily collect
+
+on:
+  # schedule:
+  #   # 05:45 UTC = 07:45 NL-zomertijd / 06:45 NL-wintertijd (na AdScout).
+  #   - cron: '45 5 * * *'
+  workflow_dispatch: {}
+
+# Never run two collects at the same time (SQLite + git push races).
+concurrency:
+  group: pulse-collect
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repo uitchecken
+        uses: actions/checkout@v4
+        with:
+          # Keep the GITHUB_TOKEN so the data commit can be pushed back.
+          persist-credentials: true
+
+      - name: Python installeren
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Pulse installeren
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-gmail.txt -r requirements-ai.txt
+          pip install -e .
+
+      - name: Secrets in de omgeving zetten
+        run: |
+          echo "META_PAGE_TOKEN=${{ secrets.META_PAGE_TOKEN }}" >> "$GITHUB_ENV"
+          echo "PULSE_META_PAGE_ID=${{ secrets.PULSE_META_PAGE_ID }}" >> "$GITHUB_ENV"
+          echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> "$GITHUB_ENV"
+
+      - name: Gmail-token uit secret schrijven (nooit in git)
+        # The interactive OAuth flow cannot run here; the token from the
+        # one-time local login lives as a secret and is written per run.
+        run: |
+          if [ -n "${{ secrets.GMAIL_TOKEN_JSON }}" ]; then
+            mkdir -p data/gmail
+            printf '%s' "${{ secrets.GMAIL_TOKEN_JSON }}" > data/gmail/token.json
+          else
+            echo "Geen GMAIL_TOKEN_JSON-secret — Gmail-bron wordt overgeslagen."
+          fi
+
+      - name: Database controleren (eenmalige bootstrap vereist)
+        # The repo is the persistent storage for this route: the initialized
+        # database and the Gmail token (interactive OAuth cannot run here)
+        # must be committed ONCE from your own machine — see the header.
+        run: |
+          if [ ! -f data/pulse.db ]; then
+            echo "::error::data/pulse.db ontbreekt in de repo. Volg de eenmalige bootstrap uit de kop van dit workflow-bestand."
+            exit 1
+          fi
+
+      - name: Dagelijkse collect draaien
+        # A failing collect must not block the data commit: partial results
+        # (and the run record in the `runs` table) are worth keeping.
+        run: |
+          pulse collect || echo "::warning::pulse collect faalde — check 'pulse status' en logs/pulse.log; bestaande data wordt alsnog gecommit."
+
+      - name: AI-analyse (alleen met sleutel)
+        run: |
+          if [ -n "${ANTHROPIC_API_KEY}" ]; then
+            pulse analyze || echo "::warning::pulse analyze faalde — items blijven in de wachtrij."
+          else
+            echo "Geen ANTHROPIC_API_KEY-secret — analyse overgeslagen (items wachten in de wachtrij)."
+          fi
+
+      - name: Weekrapport (alleen op maandag)
+        # A failing report must not block the data commit below.
+        run: |
+          if [ "$(date -u +%u)" = "1" ]; then
+            pulse report --weekly || echo "::warning::weekrapport faalde — data wordt alsnog gecommit."
+          else
+            echo "Geen maandag — weekrapport overgeslagen."
+          fi
+
+      - name: Data terug-committen naar de repo
+        # data/ and reports/ are gitignored for local use, hence `git add -f`:
+        # in this workflow the repo itself is the persistent storage. The
+        # database contains customer feedback — the repo MUST be private.
+        # data/gmail/ (OAuth token) is explicitly excluded from the commit.
+        run: |
+          git config user.name "pulse-bot"
+          git config user.email "pulse-bot@users.noreply.github.com"
+          mkdir -p data reports
+          git add -f data/ reports/
+          git rm -r --cached --ignore-unmatch -q data/gmail || true
+          if git diff --cached --quiet; then
+            echo "Geen wijzigingen — niets te committen."
+          else
+            git commit -m "[data] daily pulse collect $(date -u +%F)"
+            # Retry with rebase: a human push during the run must not cost
+            # us the day's data (non-fast-forward would otherwise fail here).
+            for attempt in 1 2 3; do
+              if git push; then
+                exit 0
+              fi
+              git pull --rebase
+            done
+            echo "::error::Push bleef falen na 3 pogingen."
+            exit 1
+          fi

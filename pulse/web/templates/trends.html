@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Trends{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Trends</h1>
+  <p class="lead">Wat komt vaak terug, en beweegt het de goede kant op?</p>
+</div>
+
+<section class="panel">
+  <h2>Feedback-volume per week</h2>
+  {% if volume_svg %}{{ volume_svg | safe }}{% else %}<p class="muted">Nog geen data — draai <code>pulse collect</code> of <code>pulse demo</code>.</p>{% endif %}
+</section>
+
+<section class="panel">
+  <h2>Sentiment per week <span class="muted">(alleen over Cloudplunge)</span></h2>
+  {% if sentiment_svg %}{{ sentiment_svg | safe }}
+  <p class="legend">
+    <span class="legend-swatch swatch-positive"></span> positief
+    <span class="legend-swatch swatch-neutral"></span> neutraal
+    <span class="legend-swatch swatch-negative"></span> negatief
+  </p>
+  {% else %}<p class="muted">Nog geen geanalyseerde items.</p>{% endif %}
+</section>
+
+<div class="two-col">
+  <section class="panel">
+    <h2>Top-klachten <span class="muted">deze week vs vorige</span></h2>
+    {% if not wow.complaints_now %}<p class="muted">Geen klachten deze week.</p>{% endif %}
+    <ol class="ranked">
+      {% for t in wow.complaints_now %}
+        {% set prev = (wow.complaints_prev | selectattr('theme', 'equalto', t.theme) | map(attribute='count') | list | first) %}
+        <li><a href="/inbox?thema={{ t.theme }}&type=complaint">{{ theme_label(t.theme) }}</a>
+            <strong>{{ t.count }}×</strong>
+            <span class="muted">{% if prev %}(was {{ prev }}×){% else %}(nieuw){% endif %}</span></li>
+      {% endfor %}
+    </ol>
+  </section>
+  <section class="panel">
+    <h2>Top-complimenten <span class="muted">deze week vs vorige</span></h2>
+    {% if not wow.compliments_now %}<p class="muted">Geen complimenten deze week.</p>{% endif %}
+    <ol class="ranked">
+      {% for t in wow.compliments_now %}
+        {% set prev = (wow.compliments_prev | selectattr('theme', 'equalto', t.theme) | map(attribute='count') | list | first) %}
+        <li><a href="/inbox?thema={{ t.theme }}&type=compliment">{{ theme_label(t.theme) }}</a>
+            <strong>{{ t.count }}×</strong>
+            <span class="muted">{% if prev %}(was {{ prev }}×){% else %}(nieuw){% endif %}</span></li>
+      {% endfor %}
+    </ol>
+  </section>
+</div>
+
+<section class="panel">
+  <h2>Thema-verdeling <span class="muted">(alles over Cloudplunge, hele historie)</span></h2>
+  {% if not themes %}<p class="muted">Nog geen geanalyseerde items.</p>{% endif %}
+  <div class="theme-bars">
+    {% for t in themes %}
+      <div class="theme-bar-row">
+        <a class="theme-bar-label" href="/inbox?thema={{ t.theme }}">{{ theme_label(t.theme) }}</a>
+        <div class="theme-bar-track">
+          <div class="theme-bar {{ 'bar-health' if t.theme == 'bijwerking-gezondheid' else '' }}"
+               style="width: {{ (t.count / max_theme * 100) | round(1) }}%"></div>
+        </div>
+        <span class="theme-bar-count">{{ t.count }}</span>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

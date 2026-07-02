@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chips, follow_up_button %}
+{% block title %}Item {{ item['id'] }}{% endblock %}
+{% block content %}
+<p><a href="{{ back }}">← terug</a></p>
+
+<article class="detail {{ 'is-health' if (item['health_flag'] or item['pre_health_flag']) else '' }}">
+  <div class="item-meta">
+    <span class="item-date">{{ (item['happened_at'] or item['first_seen']) }}</span>
+    <span class="item-author">{{ item['author_display'] or 'anoniem' }}</span>
+    {{ chips(item) }}
+  </div>
+
+  <div class="detail-text">{{ item['text'] }}</div>
+
+  <div class="detail-actions">
+    {{ follow_up_button(item, '/item/' ~ item['id']) }}
+    {# Scheme guard (defense in depth next to the import-time check): never
+       render javascript:/data: URLs as a clickable link. #}
+    {% if item['url'] and (item['url'].startswith('https://') or item['url'].startswith('http://')) %}<a class="btn btn-quiet" href="{{ item['url'] }}" target="_blank" rel="noopener noreferrer">Bekijk origineel ↗</a>{% endif %}
+  </div>
+
+  <dl class="detail-facts">
+    {% if item['analyzed_at'] %}
+      <dt>Analyse</dt>
+      <dd>
+        {{ sentiment_labels[item['sentiment']] }} · {{ type_labels[item['item_type']] }} ·
+        urgentie: {{ urgency_labels[item['urgency']] }}
+        {% if item['confidence'] is not none %} · zekerheid {{ (item['confidence'] * 100) | round | int }}%{% endif %}
+        <br>model: {{ item['model'] }} · geanalyseerd op {{ item['analyzed_at'] | day }}
+      </dd>
+      {% if item['competitor_pro'] %}<dt>Genoemd pluspunt</dt><dd>{{ item['competitor_pro'] }}</dd>{% endif %}
+      {% if item['competitor_con'] %}<dt>Genoemde klacht</dt><dd>{{ item['competitor_con'] }}</dd>{% endif %}
+    {% else %}
+      <dt>Analyse</dt>
+      <dd>Nog niet geanalyseerd — draai <code>pulse analyze</code>.
+      {% if item['analysis_error'] %}<br><span class="warn">Vorige poging mislukte ({{ item['analysis_attempts'] }}×): {{ item['analysis_error'] }}</span>{% endif %}
+      </dd>
+    {% endif %}
+    {% if item['pre_health_flag'] %}
+      <dt>Trefwoord-signaal</dt>
+      <dd>Gemarkeerd door de gezondheids-trefwoordcheck: <em>{{ health_keywords(item['text']) | join(', ') }}</em></dd>
+    {% endif %}
+    <dt>Bron</dt>
+    <dd>{{ item['source_name'] }}{% if item['competitor_name'] %} · over {{ item['competitor_name'] }}{% endif %}</dd>
+    {% if item['author_hash'] %}
+      <dt>Auteur-code (AVG)</dt>
+      <dd><code>{{ item['author_hash'][:16] }}…</code> — volledig verwijderen kan via Beheer → “Iemand vergeten” of <code>pulse forget {{ item['author_hash'] }}</code></dd>
+    {% endif %}
+    <dt>Eerste keer gezien</dt>
+    <dd>{{ item['first_seen'] }}</dd>
+  </dl>
+</article>
+
+{% if thread | length > 1 %}
+  <h2>Volledige conversatie {% if item['thread_subject'] %}— “{{ item['thread_subject'] }}”{% endif %}</h2>
+  {% for msg in thread %}
+    <article class="thread-msg {{ 'current' if msg['id'] == item['id'] else '' }}">
+      <div class="item-meta">
+        <span class="item-date">{{ (msg['happened_at'] or msg['first_seen']) | day }}</span>
+        <span class="item-author">{{ msg['author_display'] or 'anoniem' }}</span>
+      </div>
+      <div class="detail-text">{{ msg['text'] }}</div>
+    </article>
+  {% endfor %}
+{% endif %}
+{% endblock %}

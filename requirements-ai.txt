@@ -1,4 +1,5 @@
-# Optional: only needed for AI tag suggestions (ANTHROPIC_API_KEY in .env).
-# AdScout works fully without this.
+# Optional: only needed for the AI features (ANTHROPIC_API_KEY in .env) —
+# AdScout tag suggestions and Pulse feedback analysis. Both tools work
+# fully without this. Pinned like everything else; update deliberately.
 -r requirements.txt
-anthropic>=0.40,<1.0
+anthropic==0.115.1

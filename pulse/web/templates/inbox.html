@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% from "_macros.html" import item_card, pagination %}
+{% block title %}Inbox{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Inbox</h1>
+  <p class="lead">Alle feedback op één plek: mails, reacties, reviews en handmatige imports.</p>
+</div>
+
+<form method="get" action="/inbox" class="filterbar">
+  <input type="search" name="q" value="{{ params.q or '' }}" placeholder="Zoek in tekst of naam…">
+  <select name="bron">
+    <option value="">Alle bronnen</option>
+    {% for s in sources %}
+      <option value="{{ s['id'] }}" {{ 'selected' if params.bron == s['id']|string else '' }}>{{ s['name'] }}</option>
+    {% endfor %}
+  </select>
+  <select name="over">
+    <option value="">Eigen + concurrenten</option>
+    <option value="own" {{ 'selected' if params.over == 'own' else '' }}>Alleen Cloudplunge</option>
+    <option value="competitor" {{ 'selected' if params.over == 'competitor' else '' }}>Alle concurrenten</option>
+    {% for c in competitors %}
+      <option value="{{ c['id'] }}" {{ 'selected' if params.over == c['id']|string else '' }}>— {{ c['name'] }}</option>
+    {% endfor %}
+  </select>
+  <select name="sentiment">
+    <option value="">Sentiment</option>
+    {% for value, label in sentiment_labels.items() %}
+      <option value="{{ value }}" {{ 'selected' if params.sentiment == value else '' }}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="thema">
+    <option value="">Thema</option>
+    {% for t in themes %}
+      <option value="{{ t['slug'] }}" {{ 'selected' if params.thema == t['slug'] else '' }}>{{ theme_label(t['slug']) }}</option>
+    {% endfor %}
+  </select>
+  <select name="type">
+    <option value="">Type</option>
+    {% for value, label in type_labels.items() %}
+      <option value="{{ value }}" {{ 'selected' if params.type == value else '' }}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="urgentie">
+    <option value="">Urgentie</option>
+    {% for value, label in urgency_labels.items() %}
+      <option value="{{ value }}" {{ 'selected' if params.urgentie == value else '' }}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="periode">
+    <option value="">Alle periodes</option>
+    {% for days, label in periods %}
+      <option value="{{ days }}" {{ 'selected' if params.periode == days|string else '' }}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn">Filter</button>
+  <a href="/inbox" class="btn btn-quiet">Wis</a>
+</form>
+
+<p class="muted">{{ total }} item(s), nieuwste eerst.</p>
+
+{% if not items %}
+  <div class="empty-state"><p>Niets gevonden met deze filters.</p></div>
+{% endif %}
+
+{% for item in items %}
+  {{ item_card(item, '/inbox' + qs(params, page=page)) }}
+{% endfor %}
+
+{{ pagination(page, total_pages, params) }}
+{% endblock %}

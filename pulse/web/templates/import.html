@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Import{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Handmatige import</h1>
+  <p class="lead">
+    Reviews of reacties die Pulse niet automatisch kan ophalen (Trustpilot, bol,
+    concurrent-reviews, Instagram-comments van concurrenten) plak of upload je hier.
+    Dubbel importeren kan geen kwaad: bekende items worden automatisch overgeslagen.
+  </p>
+</div>
+
+{% if ok is not none %}
+  <div class="flash flash-ok">✓ {{ ok }} item(s) geïmporteerd{% if dup %} ({{ dup }} al bekend, overgeslagen){% endif %}.
+  Ze staan in de analyse-wachtrij — draai <code>pulse analyze</code> of wacht op de volgende automatische run.</div>
+{% endif %}
+{% if error %}
+  <div class="flash flash-error">✗ {{ error }}</div>
+{% endif %}
+
+<div class="two-col">
+<section class="panel">
+  <h2>Plakken</h2>
+  <form method="post" action="/import/plakken">
+    <label for="tekst">Review / reactie (meerdere tegelijk? Zet <code>---</code> op een eigen regel ertussen)</label>
+    <textarea id="tekst" name="tekst" rows="8" required
+      placeholder="Bijv.:&#10;Werkt echt goed, ik slaap eindelijk door!&#10;---&#10;Na 3 weken nog geen effect gemerkt."></textarea>
+    <div class="form-row">
+      <label>Kanaal
+        <select name="kanaal">
+          {% for value, label in paste_channels %}
+            <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Gaat over
+        <select name="concurrent">
+          <option value="">Cloudplunge (eigen merk)</option>
+          {% for c in competitors %}
+            <option value="{{ c['name'] }}">{{ c['name'] }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Datum (optioneel)
+        <input type="date" name="datum">
+      </label>
+    </div>
+    <button type="submit" class="btn">Importeer</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>CSV-upload</h2>
+  <form method="post" action="/import/csv" enctype="multipart/form-data">
+    <label for="bestand">CSV-bestand (bijv. export uit Excel/Numbers)</label>
+    <input type="file" id="bestand" name="bestand" accept=".csv,text/csv" required>
+    <button type="submit" class="btn">Upload &amp; importeer</button>
+  </form>
+  <details class="help">
+    <summary>Welke kolommen verwacht Pulse?</summary>
+    <p>Alleen een tekstkolom is verplicht. Herkende kolomkoppen (Nederlands of Engels, volgorde maakt niet uit):</p>
+    <ul>
+      <li><code>tekst</code> (of review/bericht) — verplicht</li>
+      <li><code>datum</code> — bijv. 2026-06-28 of 28-06-2026</li>
+      <li><code>auteur</code>, <code>concurrent</code>, <code>kanaal</code> (trustpilot/bol/…), <code>sterren</code>, <code>titel</code>, <code>url</code>, <code>taal</code></li>
+    </ul>
+    <p>Voorbeeldbestand: <code>tests/fixtures/pulse/competitor_reviews.csv</code>. Vanaf de terminal kan het ook: <code>pulse import bestand.csv</code>.</p>
+  </details>
+</section>
+</div>
+{% endblock %}
