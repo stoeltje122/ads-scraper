@@ -95,6 +95,9 @@ def load_settings(env_file: str | os.PathLike | None = None) -> Settings:
 def setup_logging(settings: Settings, verbose: bool = False) -> None:
     """Log to console and to logs/adscout.log (rotating)."""
     settings.logs_dir.mkdir(parents=True, exist_ok=True)
+    # httpx logs full request URLs at INFO — with Meta that includes the
+    # access token. Keep it at WARNING so no secret reaches console or file.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     root = logging.getLogger()
     if root.handlers:  # already configured (e.g. under pytest or web reload)
         return
