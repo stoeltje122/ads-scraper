@@ -1,5 +1,11 @@
 # AdScout
 
+> **Dit repo bevat twee zustertools van Cloudplunge:**
+> - **AdScout** (deze README): welke Meta-advertenties draaien onze concurrenten?
+> - **Pulse** ([PULSE.md](PULSE.md)): al onze klantfeedback op één plek — support-mails, social-reacties, reviews en concurrent-reviews, met AI-analyse en gezondheidssignalering.
+>
+> Ze delen dezelfde map, dezelfde `.env` en dezelfde concurrenten-watchlist, maar hebben elk hun eigen database, commando en dashboard.
+
 Interne tool van Cloudplunge: dagelijks automatisch bijhouden welke Meta-advertenties (Facebook/Instagram) onze concurrenten draaien, welke het langst lopen (de "winnaars") en wat er per week verandert.
 
 Deze README is geschreven voor onszelf, twee niet-technische oprichters. Uitgangspunt: **over twee jaar moet je dit nog kunnen draaien zonder hulp**. Lees minimaal secties 1 t/m 4; de rest is naslag.
