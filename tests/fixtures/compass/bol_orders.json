@@ -1,0 +1,156 @@
+{
+  "orders": [
+    {
+      "orderId": "2550001001",
+      "pickupPoint": false,
+      "orderPlacedDateTime": "2026-06-10T09:12:00+02:00",
+      "orderItems": [
+        {
+          "orderItemId": "2550001001-1",
+          "cancellationRequest": false,
+          "fulfilment": {
+            "method": "FBR",
+            "distributionParty": "RETAILER",
+            "latestDeliveryDate": "2026-06-12"
+          },
+          "offer": {
+            "offerId": "aa1000aa-0000-1111-2222-333344445555",
+            "reference": "CP-SLEEP-60"
+          },
+          "product": {
+            "ean": "8720000000017",
+            "title": "Cloudplunge Slaapformule — 60 capsules"
+          },
+          "quantity": 1,
+          "quantityShipped": 1,
+          "quantityCancelled": 0,
+          "unitPrice": 29.95,
+          "commission": 3.71
+        }
+      ],
+      "shipmentDetails": {
+        "firstName": "Jan",
+        "surname": "Jansen",
+        "streetName": "Dorpsstraat",
+        "houseNumber": "12",
+        "zipCode": "1234 AB",
+        "city": "Utrecht",
+        "countryCode": "NL",
+        "email": "j9x2k@verkopen.bol.com"
+      },
+      "billingDetails": {
+        "firstName": "Jan",
+        "surname": "Jansen"
+      }
+    },
+    {
+      "orderId": "2550001002",
+      "pickupPoint": false,
+      "orderPlacedDateTime": "2026-06-15T18:40:00+02:00",
+      "orderItems": [
+        {
+          "orderItemId": "2550001002-1",
+          "cancellationRequest": false,
+          "fulfilment": {
+            "method": "FBR",
+            "distributionParty": "RETAILER",
+            "latestDeliveryDate": "2026-06-17"
+          },
+          "offer": {
+            "offerId": "aa1000aa-0000-1111-2222-333344445555",
+            "reference": "CP-SLEEP-60"
+          },
+          "product": {
+            "ean": "8720000000017",
+            "title": "Cloudplunge Slaapformule — 60 capsules"
+          },
+          "quantity": 2,
+          "quantityShipped": 2,
+          "quantityCancelled": 0,
+          "unitPrice": 29.95,
+          "commission": 7.42
+        }
+      ]
+    },
+    {
+      "orderId": "2550001003",
+      "pickupPoint": false,
+      "orderPlacedDateTime": "2026-06-20T13:05:00+02:00",
+      "orderItems": [
+        {
+          "orderItemId": "2550001003-1",
+          "cancellationRequest": false,
+          "fulfilment": {
+            "method": "FBR",
+            "distributionParty": "RETAILER",
+            "latestDeliveryDate": "2026-06-22"
+          },
+          "offer": {
+            "offerId": "aa1000aa-0000-1111-2222-333344445555",
+            "reference": "CP-SLEEP-60"
+          },
+          "product": {
+            "ean": "8720000000017",
+            "title": "Cloudplunge Slaapformule — 60 capsules"
+          },
+          "quantity": 1,
+          "quantityShipped": 1,
+          "quantityCancelled": 0,
+          "unitPrice": 29.95,
+          "commission": 3.71
+        },
+        {
+          "orderItemId": "2550001003-2",
+          "cancellationRequest": true,
+          "fulfilment": {
+            "method": "FBR",
+            "distributionParty": "RETAILER",
+            "latestDeliveryDate": "2026-06-22"
+          },
+          "offer": {
+            "offerId": "aa1000aa-0000-1111-2222-333344445555",
+            "reference": "CP-SLEEP-60"
+          },
+          "product": {
+            "ean": "8720000000017",
+            "title": "Cloudplunge Slaapformule — 60 capsules"
+          },
+          "quantity": 1,
+          "quantityShipped": 0,
+          "quantityCancelled": 0,
+          "unitPrice": 29.95,
+          "commission": 3.71
+        }
+      ]
+    },
+    {
+      "orderId": "2550001004",
+      "pickupPoint": false,
+      "orderPlacedDateTime": "2026-06-24T21:30:00+02:00",
+      "orderItems": [
+        {
+          "orderItemId": "2550001004-1",
+          "cancellationRequest": false,
+          "fulfilment": {
+            "method": "FBR",
+            "distributionParty": "RETAILER",
+            "latestDeliveryDate": "2026-06-26"
+          },
+          "offer": {
+            "offerId": "aa1000aa-0000-1111-2222-333344445555",
+            "reference": "CP-SLEEP-60"
+          },
+          "product": {
+            "ean": "8720000000017",
+            "title": "Cloudplunge Slaapformule — 60 capsules"
+          },
+          "quantity": 1,
+          "quantityShipped": 0,
+          "quantityCancelled": 1,
+          "unitPrice": 29.95,
+          "commission": 3.71
+        }
+      ]
+    }
+  ]
+}

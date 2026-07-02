@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>nl.cloudplunge.compass</string>
+
+    <!-- REPLACE: change every "/REPLACE/PAD/NAAR/ads-scraper" below (3x)
+         to the absolute path of your ads-scraper folder,
+         e.g. /Users/anna/ads-scraper.
+         See compass/README.md, section "Dagelijkse run instellen". -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/REPLACE/PAD/NAAR/ads-scraper/ops/compass-cron.sh</string>
+    </array>
+
+    <!-- Daily at 07:30 local time — half an hour after AdScout's 07:00 run,
+         so the two jobs never overlap. If the Mac is asleep at 07:30,
+         launchd runs the job as soon as it wakes up. -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>7</integer>
+        <key>Minute</key>
+        <integer>30</integer>
+    </dict>
+
+    <!-- launchd's own stdout/stderr capture. The script itself also logs
+         to logs/cron-compass.log; these files catch anything before that
+         starts. -->
+    <key>StandardOutPath</key>
+    <string>/REPLACE/PAD/NAAR/ads-scraper/logs/launchd-compass.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/REPLACE/PAD/NAAR/ads-scraper/logs/launchd-compass.err.log</string>
+</dict>
+</plist>

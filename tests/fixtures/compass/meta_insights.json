@@ -1,0 +1,111 @@
+{
+  "data": [
+    {
+      "campaign_id": "23850000000000101",
+      "campaign_name": "Prospecting – Advantage+",
+      "spend": "245.67",
+      "impressions": "18234",
+      "clicks": "312",
+      "actions": [
+        {"action_type": "landing_page_view", "value": "148"},
+        {"action_type": "link_click", "value": "312"},
+        {"action_type": "omni_purchase", "value": "9"},
+        {"action_type": "purchase", "value": "9"},
+        {"action_type": "offsite_conversion.fb_pixel_purchase", "value": "8"},
+        {"action_type": "add_to_cart", "value": "31"}
+      ],
+      "action_values": [
+        {"action_type": "omni_purchase", "value": "269.55"},
+        {"action_type": "purchase", "value": "269.55"},
+        {"action_type": "offsite_conversion.fb_pixel_purchase", "value": "239.60"}
+      ],
+      "date_start": "2026-06-28",
+      "date_stop": "2026-06-28"
+    },
+    {
+      "campaign_id": "23850000000000102",
+      "campaign_name": "Retargeting – Warm",
+      "spend": "88.20",
+      "impressions": "6420",
+      "clicks": "154",
+      "actions": [
+        {"action_type": "link_click", "value": "154"},
+        {"action_type": "purchase", "value": "4"},
+        {"action_type": "offsite_conversion.fb_pixel_purchase", "value": "3"}
+      ],
+      "action_values": [
+        {"action_type": "purchase", "value": "119.80"},
+        {"action_type": "offsite_conversion.fb_pixel_purchase", "value": "89.85"}
+      ],
+      "date_start": "2026-06-28",
+      "date_stop": "2026-06-28"
+    },
+    {
+      "campaign_id": "23850000000000103",
+      "campaign_name": "Brand – Search",
+      "spend": "31.05",
+      "impressions": "2101",
+      "clicks": "58",
+      "actions": [
+        {"action_type": "link_click", "value": "58"},
+        {"action_type": "landing_page_view", "value": "44"}
+      ],
+      "date_start": "2026-06-28",
+      "date_stop": "2026-06-28"
+    },
+    {
+      "campaign_id": "23850000000000101",
+      "campaign_name": "Prospecting – Advantage+",
+      "spend": "252.10",
+      "impressions": "18990",
+      "clicks": "324",
+      "actions": [
+        {"action_type": "landing_page_view", "value": "150"},
+        {"action_type": "link_click", "value": "324"},
+        {"action_type": "offsite_conversion.fb_pixel_purchase", "value": "10"}
+      ],
+      "action_values": [
+        {"action_type": "offsite_conversion.fb_pixel_purchase", "value": "299.50"}
+      ],
+      "date_start": "2026-06-29",
+      "date_stop": "2026-06-29"
+    },
+    {
+      "campaign_id": "23850000000000102",
+      "campaign_name": "Retargeting – Warm",
+      "spend": "90.00",
+      "impressions": "6600",
+      "clicks": "160",
+      "actions": [
+        {"action_type": "link_click", "value": "160"},
+        {"action_type": "omni_purchase", "value": "5"},
+        {"action_type": "purchase", "value": "5"}
+      ],
+      "action_values": [
+        {"action_type": "omni_purchase", "value": "149.75"},
+        {"action_type": "purchase", "value": "149.75"}
+      ],
+      "date_start": "2026-06-29",
+      "date_stop": "2026-06-29"
+    },
+    {
+      "campaign_id": "23850000000000103",
+      "campaign_name": "Brand – Search",
+      "spend": "29.95",
+      "impressions": "1980",
+      "clicks": "51",
+      "actions": [
+        {"action_type": "link_click", "value": "51"}
+      ],
+      "action_values": [],
+      "date_start": "2026-06-29",
+      "date_stop": "2026-06-29"
+    }
+  ],
+  "paging": {
+    "cursors": {
+      "before": "MAZDZD",
+      "after": "MjQZD"
+    }
+  }
+}

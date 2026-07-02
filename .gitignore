@@ -5,6 +5,7 @@
 data/
 reports/
 exports/
+export/
 logs/
 
 # Python

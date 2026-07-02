@@ -4,6 +4,13 @@ Interne tool van Cloudplunge: dagelijks automatisch bijhouden welke Meta-adverte
 
 Deze README is geschreven voor onszelf, twee niet-technische oprichters. Uitgangspunt: **over twee jaar moet je dit nog kunnen draaien zonder hulp**. Lees minimaal secties 1 t/m 4; de rest is naslag.
 
+## Dit repo bevat twee tools
+
+- **AdScout** (deze README) — volgt welke Meta-advertenties onze concurrenten draaien. Dashboard op poort 8000.
+- **Compass** ([compass/README.md](compass/README.md)) — ons eigen financiële dashboard: omzet (Shopify + bol), ad spend (Meta), marge, voorraad en opschaal-signalen. Dashboard op poort 8010.
+
+Ze delen de projectmap, de installatie en `.env`, maar hebben elk hun eigen database, commando (`adscout` / `compass`) en documentatie.
+
 ## Inhoudsopgave
 
 1. [Wat is AdScout](#1-wat-is-adscout)

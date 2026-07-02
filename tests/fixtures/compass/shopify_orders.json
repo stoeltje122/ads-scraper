@@ -1,0 +1,310 @@
+{
+  "orders": [
+    {
+      "id": 6100000000001,
+      "order_number": 1001,
+      "name": "#1001",
+      "test": false,
+      "created_at": "2026-06-05T10:15:00+02:00",
+      "processed_at": "2026-06-05T10:15:02+02:00",
+      "updated_at": "2026-06-05T10:15:02+02:00",
+      "closed_at": null,
+      "cancelled_at": null,
+      "currency": "EUR",
+      "presentment_currency": "EUR",
+      "taxes_included": true,
+      "confirmed": true,
+      "financial_status": "paid",
+      "fulfillment_status": "fulfilled",
+      "total_price": "29.95",
+      "subtotal_price": "29.95",
+      "total_tax": "2.47",
+      "total_discounts": "0.00",
+      "current_total_price": "29.95",
+      "current_subtotal_price": "29.95",
+      "current_total_tax": "2.47",
+      "payment_gateway_names": [
+        "iDEAL"
+      ],
+      "customer": {
+        "id": 7000000001,
+        "email": "anna@example.com",
+        "orders_count": 1,
+        "state": "enabled"
+      },
+      "line_items": [
+        {
+          "id": 8100000000001,
+          "title": "Cloudplunge Slaapformule — 60 capsules",
+          "sku": "CP-SLEEP-60",
+          "quantity": 1,
+          "price": "29.95"
+        }
+      ],
+      "refunds": [],
+      "email": "anna@example.com",
+      "contact_email": "anna@example.com",
+      "phone": "+31612345678",
+      "shipping_address": {
+        "first_name": "Anna",
+        "last_name": "de Vries",
+        "address1": "Keizersgracht 1",
+        "city": "Amsterdam",
+        "zip": "1015 CC",
+        "country_code": "NL"
+      },
+      "billing_address": {
+        "first_name": "Anna",
+        "last_name": "de Vries",
+        "address1": "Keizersgracht 1",
+        "city": "Amsterdam",
+        "zip": "1015 CC",
+        "country_code": "NL"
+      },
+      "client_details": {
+        "browser_ip": "83.84.85.86",
+        "user_agent": "Mozilla/5.0"
+      }
+    },
+    {
+      "id": 6100000000002,
+      "order_number": 1002,
+      "name": "#1002",
+      "test": false,
+      "created_at": "2026-06-12T14:30:00+02:00",
+      "processed_at": "2026-06-12T14:30:03+02:00",
+      "updated_at": "2026-06-12T14:30:03+02:00",
+      "closed_at": null,
+      "cancelled_at": null,
+      "currency": "EUR",
+      "presentment_currency": "EUR",
+      "taxes_included": true,
+      "confirmed": true,
+      "financial_status": "paid",
+      "fulfillment_status": "fulfilled",
+      "total_price": "59.90",
+      "subtotal_price": "59.90",
+      "total_tax": "4.95",
+      "total_discounts": "0.00",
+      "current_total_price": "59.90",
+      "current_subtotal_price": "59.90",
+      "current_total_tax": "4.95",
+      "payment_gateway_names": [
+        "shopify_payments"
+      ],
+      "customer": {
+        "id": 7000000002,
+        "email": "bram@example.com",
+        "orders_count": 1,
+        "state": "enabled"
+      },
+      "line_items": [
+        {
+          "id": 8100000000002,
+          "title": "Cloudplunge Slaapformule — 60 capsules",
+          "sku": "CP-SLEEP-60",
+          "quantity": 2,
+          "price": "29.95"
+        }
+      ],
+      "refunds": []
+    },
+    {
+      "id": 6100000000003,
+      "order_number": 1003,
+      "name": "#1003",
+      "test": false,
+      "created_at": "2026-06-18T09:05:00+02:00",
+      "processed_at": "2026-06-18T09:05:01+02:00",
+      "updated_at": "2026-06-20T16:40:01+02:00",
+      "closed_at": null,
+      "cancelled_at": null,
+      "currency": "EUR",
+      "presentment_currency": "EUR",
+      "taxes_included": true,
+      "confirmed": true,
+      "financial_status": "partially_refunded",
+      "fulfillment_status": "fulfilled",
+      "total_price": "29.95",
+      "subtotal_price": "29.95",
+      "total_tax": "2.47",
+      "total_discounts": "0.00",
+      "current_total_price": "19.95",
+      "current_subtotal_price": "19.95",
+      "current_total_tax": "1.65",
+      "payment_gateway_names": [
+        "iDEAL"
+      ],
+      "customer": {
+        "id": 7000000003,
+        "email": "carla@example.com",
+        "orders_count": 1,
+        "state": "enabled"
+      },
+      "line_items": [
+        {
+          "id": 8100000000003,
+          "title": "Cloudplunge Slaapformule — 60 capsules",
+          "sku": "CP-SLEEP-60",
+          "quantity": 1,
+          "price": "29.95"
+        }
+      ],
+      "refunds": [
+        {
+          "id": 9200000000001,
+          "created_at": "2026-06-20T16:40:00+02:00",
+          "note": "coulance na klacht over de smaak",
+          "transactions": [
+            {
+              "id": 9300000000001,
+              "kind": "refund",
+              "status": "success",
+              "amount": "10.00",
+              "currency": "EUR"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 6100000000004,
+      "order_number": 1004,
+      "name": "#1004",
+      "test": false,
+      "created_at": "2026-06-21T20:45:00+02:00",
+      "processed_at": "2026-06-21T20:45:02+02:00",
+      "updated_at": "2026-06-24T11:10:02+02:00",
+      "closed_at": "2026-06-24T11:10:02+02:00",
+      "cancelled_at": null,
+      "currency": "EUR",
+      "presentment_currency": "EUR",
+      "taxes_included": true,
+      "confirmed": true,
+      "financial_status": "refunded",
+      "fulfillment_status": "fulfilled",
+      "total_price": "29.95",
+      "subtotal_price": "29.95",
+      "total_tax": "2.47",
+      "total_discounts": "0.00",
+      "current_total_price": "0.00",
+      "current_subtotal_price": "0.00",
+      "current_total_tax": "0.00",
+      "payment_gateway_names": [
+        "shopify_payments"
+      ],
+      "customer": {
+        "id": 7000000004,
+        "email": "dirk@example.com",
+        "orders_count": 1,
+        "state": "enabled"
+      },
+      "line_items": [
+        {
+          "id": 8100000000004,
+          "title": "Cloudplunge Slaapformule — 60 capsules",
+          "sku": "CP-SLEEP-60",
+          "quantity": 1,
+          "price": "29.95"
+        }
+      ],
+      "refunds": [
+        {
+          "id": 9200000000002,
+          "created_at": "2026-06-24T11:10:00+02:00",
+          "note": "retour ontvangen, volledig terugbetaald",
+          "transactions": [
+            {
+              "id": 9300000000002,
+              "kind": "refund",
+              "status": "success",
+              "amount": "29.95",
+              "currency": "EUR"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 6100000000005,
+      "order_number": 1005,
+      "name": "#1005",
+      "test": false,
+      "created_at": "2026-06-25T11:20:00+02:00",
+      "processed_at": "2026-06-25T11:20:02+02:00",
+      "updated_at": "2026-06-25T11:20:02+02:00",
+      "closed_at": null,
+      "cancelled_at": null,
+      "currency": "EUR",
+      "presentment_currency": "EUR",
+      "taxes_included": true,
+      "confirmed": true,
+      "financial_status": "paid",
+      "fulfillment_status": null,
+      "total_price": "29.95",
+      "subtotal_price": "29.95",
+      "total_tax": "2.47",
+      "total_discounts": "0.00",
+      "current_total_price": "29.95",
+      "current_subtotal_price": "29.95",
+      "current_total_tax": "2.47",
+      "payment_gateway_names": [
+        "iDEAL"
+      ],
+      "customer": {
+        "id": 7000000001,
+        "email": "anna@example.com",
+        "orders_count": 2,
+        "state": "enabled"
+      },
+      "line_items": [
+        {
+          "id": 8100000000005,
+          "title": "Cloudplunge Slaapformule — 60 capsules",
+          "sku": "CP-SLEEP-60",
+          "quantity": 1,
+          "price": "29.95"
+        }
+      ],
+      "refunds": []
+    },
+    {
+      "id": 6100000000006,
+      "order_number": 1006,
+      "name": "#1006",
+      "test": true,
+      "created_at": "2026-06-26T08:00:00+02:00",
+      "processed_at": "2026-06-26T08:00:01+02:00",
+      "updated_at": "2026-06-26T08:00:01+02:00",
+      "closed_at": null,
+      "cancelled_at": null,
+      "currency": "EUR",
+      "presentment_currency": "EUR",
+      "taxes_included": true,
+      "confirmed": true,
+      "financial_status": "paid",
+      "fulfillment_status": null,
+      "total_price": "29.95",
+      "subtotal_price": "29.95",
+      "total_tax": "2.47",
+      "total_discounts": "0.00",
+      "current_total_price": "29.95",
+      "current_subtotal_price": "29.95",
+      "current_total_tax": "2.47",
+      "payment_gateway_names": [
+        "bogus"
+      ],
+      "customer": null,
+      "line_items": [
+        {
+          "id": 8100000000006,
+          "title": "Cloudplunge Slaapformule — 60 capsules",
+          "sku": "CP-SLEEP-60",
+          "quantity": 1,
+          "price": "29.95"
+        }
+      ],
+      "refunds": []
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+# Compass dagelijkse verzamel-run op GitHub Actions.
+# LET OP: alleen gebruiken op een PRIVE repository — de workflow commit de
+# SQLite-database met omzet- en margecijfers terug naar de repo.
+# Setup-instructies: compass/README.md, sectie "Dagelijkse run instellen".
+name: Compass daily collect
+
+on:
+  schedule:
+    # 05:45 UTC = 07:45 NL-zomertijd / 06:45 NL-wintertijd — een half uur
+    # na AdScout's run, zodat de twee data-commits elkaar zelden kruisen.
+    - cron: '45 5 * * *'
+  workflow_dispatch: {}
+
+# Never run two collects at the same time (SQLite + git push races).
+concurrency:
+  group: compass-collect
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repo uitchecken
+        uses: actions/checkout@v4
+        with:
+          # Keep the GITHUB_TOKEN so the data commit can be pushed back.
+          persist-credentials: true
+
+      - name: Python installeren
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compass installeren
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Secrets en variabelen in de omgeving zetten
+        # Secrets: GitHub Settings → Secrets and variables → Actions.
+        # De niet-geheime waarden (shop-domein, account-id) staan daar op
+        # het tabblad "Variables" — zie compass/README.md, route (b).
+        run: |
+          echo "SHOPIFY_ACCESS_TOKEN=${{ secrets.SHOPIFY_ACCESS_TOKEN }}" >> "$GITHUB_ENV"
+          echo "META_ACCESS_TOKEN=${{ secrets.META_ACCESS_TOKEN }}" >> "$GITHUB_ENV"
+          echo "BOL_CLIENT_ID=${{ secrets.BOL_CLIENT_ID }}" >> "$GITHUB_ENV"
+          echo "BOL_CLIENT_SECRET=${{ secrets.BOL_CLIENT_SECRET }}" >> "$GITHUB_ENV"
+          echo "SHOPIFY_SHOP=${{ vars.SHOPIFY_SHOP }}" >> "$GITHUB_ENV"
+          echo "META_AD_ACCOUNT_ID=${{ vars.META_AD_ACCOUNT_ID }}" >> "$GITHUB_ENV"
+
+      - name: Database controleren (eenmalige bootstrap vereist)
+        # The repo is the persistent storage for this route: the initialized
+        # database (with the real cost model filled in) must be committed
+        # ONCE from your own machine — see compass/README.md "Dagelijkse run
+        # instellen", route (b). Without it every run would refuse to
+        # collect (no cost model) against an empty DB, forever.
+        run: |
+          if [ ! -f data/compass.db ]; then
+            echo "::error::data/compass.db ontbreekt in de repo. Volg de eenmalige bootstrap uit compass/README.md sectie 'Dagelijkse run instellen' (route b): lokaal 'compass init' + 'compass costs set' draaien en daarna 'git add -f data/compass.db && git commit && git push'."
+            exit 1
+          fi
+
+      - name: Dagelijkse collect draaien
+        # A failing collect must not block the data commit: partial results
+        # (and the run record in the `runs` table) are worth keeping.
+        run: |
+          compass collect || echo "::warning::compass collect faalde — check 'compass status' en logs/compass.log; bestaande data wordt alsnog gecommit."
+
+      - name: Weekrapport (alleen op maandag)
+        run: |
+          if [ "$(date -u +%u)" = "1" ]; then
+            compass report --weekly
+          else
+            echo "Geen maandag — weekrapport overgeslagen."
+          fi
+
+      - name: Data terug-committen naar de repo
+        # data/ and reports/ are gitignored for local use, hence `git add -f`:
+        # in this workflow the repo itself is the persistent storage, so the
+        # database and reports must be committed to keep history. (No secret
+        # ends up in the commit — the repo must still be PRIVATE for the
+        # revenue and margin data.)
+        run: |
+          git config user.name "compass-bot"
+          git config user.email "compass-bot@users.noreply.github.com"
+          mkdir -p data reports
+          git add -f data/ reports/
+          if git diff --cached --quiet; then
+            echo "Geen wijzigingen — niets te committen."
+          else
+            git commit -m "[data] compass daily collect $(date -u +%F)"
+            # Retry with rebase: a human push (or AdScout's own data commit)
+            # during the run must not cost us the day's data.
+            for attempt in 1 2 3; do
+              if git push; then
+                exit 0
+              fi
+              echo "Push poging ${attempt} faalde — rebase en opnieuw…"
+              git pull --rebase
+              sleep 5
+            done
+            git push
+          fi
