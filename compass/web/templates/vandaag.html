@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stat_card, verdict_block, signal_card, meta_vs_actual_table %}
+{% block title %}Vandaag{% endblock %}
+{% block content %}
+<h1>Vandaag <span class="muted small">{{ fmt_day(today) }}</span></h1>
+
+{% if freshness.banner %}
+<div class="banner banner-warn">{{ freshness.banner }}</div>
+{% elif freshness.line %}
+<p class="muted small">{{ freshness.line }}</p>
+{% endif %}
+
+<section class="panel">
+  <h2>Vandaag <span class="muted">(lopende dag)</span></h2>
+  <div class="stats">
+    {{ stat_card("Omzet Shopify", fmt_eur(vandaag.revenue_shopify_cents), "incl. btw") }}
+    {{ stat_card("Omzet bol", fmt_eur(vandaag.revenue_bol_cents), "incl. btw") }}
+    {{ stat_card("Orders", nlnum(vandaag.orders_count)) }}
+    {{ stat_card("Ad spend", fmt_eur(vandaag.spend_cents)) }}
+    {{ stat_card("Marge", fmt_eur(vandaag.margin_cents), "contributiemarge") }}
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Deze week <span class="muted">({{ fmt_day(week.start) }} t/m {{ fmt_day(week.end) }})</span></h2>
+  <div class="stats">
+    {{ stat_card("Omzet", fmt_eur(week.revenue_incl_cents), "incl. btw, beide kanalen") }}
+    {{ stat_card("Orders", nlnum(week.orders_count)) }}
+    {{ stat_card("Ad spend", fmt_eur(week.spend_cents)) }}
+    {{ stat_card("MER", fmt_ratio(week.mer), "omzet excl. btw / spend") }}
+    {{ stat_card("Break-even ROAS", fmt_ratio(week.break_even_roas)) }}
+    {{ stat_card("Marge", fmt_eur(week.margin_cents), "contributiemarge") }}
+    {{ stat_card("Nieuwe klanten", nlnum(week.new_customers)) }}
+    {{ stat_card("CAC", fmt_eur(week.cac_cents), "spend / nieuwe klanten") }}
+  </div>
+  {{ verdict_block(verdict) }}
+  <p class="muted small">{{ DISCLAIMER }}</p>
+</section>
+
+<section class="panel">
+  <h2>Volgens Meta vs werkelijk <span class="muted">(7 dagen)</span></h2>
+  {{ meta_vs_actual_table(meta_gap) }}
+  <p class="explain small">{{ attribution_explainer }}</p>
+</section>
+
+<section class="panel">
+  <h2>Laatste 30 volledige dagen <span class="muted">— omzet excl. btw vs ad spend per dag</span></h2>
+  <div class="chart-wrap">{{ chart_svg | safe }}</div>
+</section>
+
+<section class="panel">
+  <h2>Openstaande signalen <span class="count">({{ signals_open|length }})</span></h2>
+  {% if signals_open %}
+    {% for sig in signals_open %}
+      {{ signal_card(sig) }}
+    {% endfor %}
+    <p><a href="/signalen">Alle signalen bekijken →</a></p>
+  {% else %}
+  <p class="empty">Geen openstaande signalen.</p>
+  {% endif %}
+  <p class="muted small">{{ DISCLAIMER }}</p>
+</section>
+{% endblock %}

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Compass{% endblock %} · Compass</title>
+<link rel="stylesheet" href="/static/compass.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="/">Com<span>pass</span></a>
+    <nav class="mainnav">
+      <a href="/" class="{{ 'active' if nav == 'vandaag' else '' }}">Vandaag</a>
+      <a href="/maand" class="{{ 'active' if nav == 'maand' else '' }}">Maand</a>
+      <a href="/advertenties" class="{{ 'active' if nav == 'advertenties' else '' }}">Advertenties</a>
+      <a href="/economie" class="{{ 'active' if nav == 'economie' else '' }}">Economie</a>
+      <a href="/voorraad" class="{{ 'active' if nav == 'voorraad' else '' }}">Voorraad</a>
+      <a href="/signalen" class="{{ 'active' if nav == 'signalen' else '' }}">Signalen{% if active_count %} <span class="nav-badge">{{ active_count }}</span>{% endif %}</a>
+      <a href="/instellingen" class="{{ 'active' if nav == 'instellingen' else '' }}">Instellingen</a>
+    </nav>
+  </div>
+</header>
+
+{% if demo %}
+<div class="banner banner-demo">
+  <div class="container">Demo-modus: dit zijn gegenereerde voorbeeldcijfers, geen echte data.</div>
+</div>
+{% endif %}
+
+<main class="container">
+{% block content %}{% endblock %}
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <p>{{ DISCLAIMER }}</p>
+    <p>{{ NO_BOOKKEEPING }}</p>
+    <p>Compass draait alleen-lezen op jullie eigen data.</p>
+  </div>
+</footer>
+</body>
+</html>

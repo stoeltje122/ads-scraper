@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stat_card %}
+{% block title %}Economie{% endblock %}
+{% block content %}
+<h1>Unit-economie <span class="muted small">({{ fmt_day(start) }} t/m {{ fmt_day(end) }} — laatste 30 volledige dagen)</span></h1>
+
+<section class="panel">
+  <h2>Kerncijfers (30 dagen)</h2>
+  <div class="stats">
+    {{ stat_card("Break-even ROAS", fmt_ratio(window.break_even_roas), "1 / contributiemarge-ratio") }}
+    {{ stat_card("MER", fmt_ratio(window.mer), "omzet excl. btw / spend") }}
+    {{ stat_card("CAC", fmt_eur(window.cac_cents), "spend / nieuwe klanten") }}
+    {{ stat_card("AOV", fmt_eur(window.aov_cents), "gemiddelde orderwaarde incl. btw") }}
+  </div>
+  {% if break_even_eur %}
+  <p class="explain">Wat betekent break-even ROAS? Elke euro ad spend moet minstens {{ break_even_eur }} omzet excl. btw opleveren om de kosten van het product, de verzending en de fees terug te verdienen. Zit de MER daarboven, dan verdienen de advertenties zichzelf terug; zit hij eronder, dan leggen jullie erop toe.</p>
+  {% else %}
+  <p class="explain">Wat betekent break-even ROAS? Elke euro ad spend moet minstens zoveel omzet excl. btw opleveren dat product, verzending en fees terugverdiend zijn. Zodra er betaalde orders zijn, rekent Compass dit getal hier voor.</p>
+  {% endif %}
+</section>
+
+{% for ch in channels %}
+<section class="panel">
+  <h2>{{ ch.label }}</h2>
+  {% if ch.econ.avg %}
+  <div class="stats">
+    {{ stat_card("Orders (30d)", nlnum(ch.econ.orders_count)) }}
+    {{ stat_card("Stuks", nlnum(ch.econ.units)) }}
+    {{ stat_card("AOV", fmt_eur(ch.econ.aov_incl_cents), "incl. btw") }}
+    {{ stat_card("Marge per order", fmt_eur(ch.econ.avg.margin_cents), "gemiddeld") }}
+  </div>
+  <div class="chart-wrap">{{ ch.waterfall_svg | safe }}</div>
+  <table class="table table-narrow">
+    <tbody>
+      <tr><td>Omzet excl. btw</td><td>{{ fmt_eur(ch.econ.avg.revenue_excl_cents) }}</td></tr>
+      <tr><td>− Inkoop (COGS)</td><td>{{ fmt_eur(ch.econ.avg.cogs_cents) }}</td></tr>
+      <tr><td>− Verzending</td><td>{{ fmt_eur(ch.econ.avg.shipping_cents) }}</td></tr>
+      <tr><td>− Betaalfees</td><td>{{ fmt_eur(ch.econ.avg.payment_fee_cents) }}</td></tr>
+      <tr><td>− bol-commissie</td><td>{{ fmt_eur(ch.econ.avg.bol_commission_cents) }}</td></tr>
+      <tr class="{{ 'pos' if ch.econ.avg.margin_cents >= 0 else 'neg' }}"><th>Contributiemarge</th><th>{{ fmt_eur(ch.econ.avg.margin_cents) }}</th></tr>
+    </tbody>
+  </table>
+  <p class="muted small">Gemiddelde per betaalde order over de laatste 30 volledige dagen, volgens het kostenmodel.</p>
+  {% else %}
+  <p class="empty">Nog geen betaalde orders via {{ ch.label }} in deze periode.</p>
+  {% endif %}
+</section>
+{% endfor %}
+{% endblock %}

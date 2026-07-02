@@ -1,0 +1,60 @@
+{# Shared building blocks: stat cards, verdict blocks, signal cards. #}
+
+{% macro stat_card(label, value, sub=None) -%}
+<div class="stat">
+  <div class="stat-label">{{ label }}</div>
+  <div class="stat-value">{{ value }}</div>
+  {% if sub %}<div class="stat-sub">{{ sub }}</div>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro verdict_block(verdict) -%}
+<div class="verdict verdict-{{ verdict.kind }}">
+  <span class="verdict-label">{{ verdict.label }}</span>
+  <span class="verdict-text">{{ verdict.text }}</span>
+</div>
+{%- endmacro %}
+
+{% macro signal_card(sig, show_button=True) %}
+<article class="signal{{ ' signal-seen' if sig.status == 'seen' else '' }}">
+  <div class="signal-head">
+    <span class="chip chip-signal">{{ signal_type_label(sig.type) }}</span>
+    <span class="muted small">{{ fmt_day(sig.day) }}</span>
+    {% if sig.status == 'seen' %}<span class="chip chip-stopped">Gezien</span>{% endif %}
+  </div>
+  <p class="signal-message">{{ sig.message }}</p>
+  {% if sig.explanation %}<p class="signal-explanation">{{ sig.explanation }}</p>{% endif %}
+  {% if sig.details %}
+  <details class="signal-details">
+    <summary>Details (de cijfers achter dit signaal)</summary>
+    <pre>{{ pretty_json(sig.details) }}</pre>
+  </details>
+  {% endif %}
+  {% if show_button and sig.status == 'new' and sig.id %}
+  <form class="inline-form" method="post" action="/signalen/{{ sig.id }}/gezien">
+    <button class="btn btn-small" type="submit">Markeer als gezien</button>
+  </form>
+  {% endif %}
+</article>
+{% endmacro %}
+
+{% macro meta_vs_actual_table(gap) %}
+<table class="table">
+  <thead>
+    <tr><th></th><th>Volgens Meta</th><th>Werkelijk (Shopify + bol)</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Aankopen / orders</td>
+      <td>{{ nlnum(gap.meta_purchases) }} <span class="muted small">volgens Meta</span></td>
+      <td>{{ nlnum(gap.orders_count) }}</td>
+    </tr>
+    <tr>
+      <td>Aankoopwaarde / omzet (incl. btw)</td>
+      <td>{{ fmt_eur(gap.meta_value_cents) }} <span class="muted small">volgens Meta</span></td>
+      <td>{{ fmt_eur(gap.revenue_incl_cents) }}</td>
+    </tr>
+  </tbody>
+</table>
+<p class="muted">Verschil (volgens Meta − werkelijk): {{ fmt_eur(gap.diff_cents) }}{% if gap.diff_pct is not none %} ({{ fmt_pct(gap.diff_pct) }}){% endif %}.</p>
+{% endmacro %}

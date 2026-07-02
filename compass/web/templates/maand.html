@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Maand{% endblock %}
+{% block content %}
+<h1>Per maand</h1>
+<div class="banner banner-note">{{ NO_BOOKKEEPING }}</div>
+
+{% if months %}
+<section class="panel">
+  <h2>Trend <span class="muted">— omzet vs spend vs marge per maand</span></h2>
+  <div class="chart-wrap">{{ chart_svg | safe }}</div>
+</section>
+
+<section class="panel">
+  <h2>Maandoverzicht</h2>
+  <div class="table-scroll">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Maand</th>
+        <th>Omzet Shopify</th>
+        <th>Omzet bol</th>
+        <th>Inkoop (COGS)</th>
+        <th>Verzending</th>
+        <th>Betaalfees</th>
+        <th>bol-commissie</th>
+        <th>Marge</th>
+        <th>Ad spend</th>
+        <th>Vaste lasten</th>
+        <th>Netto-indicatie</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in months %}
+      <tr>
+        <td>{{ month_label(m.month) }}{% if m.month == current_month %} <span class="muted small">(lopend)</span>{% endif %}</td>
+        <td>{{ fmt_eur(m.totals.revenue_shopify_cents) }}</td>
+        <td>{{ fmt_eur(m.totals.revenue_bol_cents) }}</td>
+        <td>{{ fmt_eur(m.cogs_cents) }}</td>
+        <td>{{ fmt_eur(m.shipping_cents) }}</td>
+        <td>{{ fmt_eur(m.payment_fee_cents) }}</td>
+        <td>{{ fmt_eur(m.bol_commission_cents) }}</td>
+        <td>{{ fmt_eur(m.totals.margin_cents) }}</td>
+        <td>{{ fmt_eur(m.totals.spend_cents) }}</td>
+        <td>{{ fmt_eur(m.fixed_cents) }}{% if m.month == current_month %} <span class="muted small">(pro rata t/m vandaag)</span>{% endif %}</td>
+        <td class="{{ 'pos' if m.net_cents >= 0 else 'neg' }}">{{ fmt_eur(m.net_cents) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="muted small">Omzet is incl. btw en na verrekening van refunds; marge is de contributiemarge (excl. btw) volgens het kostenmodel. Maanden zonder data worden overgeslagen.</p>
+</section>
+{% else %}
+<p class="empty">Nog geen maandcijfers — draai <code>compass collect</code>, <code>compass backfill</code> of probeer <code>compass demo</code>.</p>
+{% endif %}
+{% endblock %}

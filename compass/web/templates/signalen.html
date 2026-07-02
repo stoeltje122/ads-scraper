@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "_macros.html" import signal_card %}
+{% block title %}Signalen{% endblock %}
+{% block content %}
+<h1>Signalen</h1>
+<p class="explain">{{ DISCLAIMER }}</p>
+
+<section class="panel">
+  <h2>Openstaand <span class="count">({{ signals_open|length }})</span></h2>
+  {% if signals_open %}
+    {% for sig in signals_open %}
+      {{ signal_card(sig) }}
+    {% endfor %}
+  {% else %}
+  <p class="empty">Geen openstaande signalen — niets dat nu aandacht vraagt.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Historie <span class="count">({{ history|length }})</span></h2>
+  {% if history %}
+  <table class="table">
+    <thead>
+      <tr><th>Dag</th><th>Type</th><th>Status</th><th>Melding</th></tr>
+    </thead>
+    <tbody>
+      {% for sig in history %}
+      <tr class="{{ 'row-seen' if sig.status == 'seen' else '' }}">
+        <td>{{ fmt_day(sig.day) }}</td>
+        <td>{{ signal_type_label(sig.type) }}</td>
+        <td>{{ 'Gezien' if sig.status == 'seen' else 'Nieuw' }}</td>
+        <td>
+          {{ sig.message }}
+          {% if sig.explanation %}
+          <details class="signal-details">
+            <summary>Details</summary>
+            <p class="signal-explanation small">{{ sig.explanation }}</p>
+            {% if sig.details %}<pre>{{ pretty_json(sig.details) }}</pre>{% endif %}
+          </details>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">Nog geen signalen afgegeven. Signalen ontstaan vanzelf zodra er genoeg dagen data zijn.</p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}Instellingen{% endblock %}
+{% block content %}
+<h1>Instellingen</h1>
+
+{% if fout == 'kostenmodel' %}
+<div class="banner banner-warn">Kon het kostenmodel niet opslaan — controleer de ingevulde waarden (bedragen met komma, bijv. 6,50).</div>
+{% endif %}
+
+<section class="panel">
+  <h2>Kostenmodel</h2>
+  {% if cost_model %}
+  <dl class="kv">
+    <dt>Geldig vanaf</dt><dd>{{ fmt_day(cost_model.valid_from) }}</dd>
+    <dt>Inkoopprijs per stuk (COGS)</dt><dd>{{ fmt_eur(cost_model.cogs_per_unit_cents) }}</dd>
+    <dt>Verzendkosten per order</dt><dd>{{ fmt_eur(cost_model.shipping_per_order_cents) }}</dd>
+    <dt>Standaard betaalfee</dt><dd>{{ pct_input(cost_model.fee_pct) }}% + {{ fmt_eur(cost_model.fee_fixed_cents) }}</dd>
+    {% if cost_model.payment_fees %}
+    <dt>Betaalfees per methode</dt>
+    <dd>
+      {% for method, fee in cost_model.payment_fees.items() %}
+      {{ method }}: {{ pct_input(fee.pct) }}% + {{ fmt_eur(fee.fixed_cents) }}{% if not loop.last %} · {% endif %}
+      {% endfor %}
+    </dd>
+    {% endif %}
+    <dt>bol-commissie</dt><dd>{{ pct_input(cost_model.bol_commission_pct) }}%</dd>
+    <dt>btw-tarief</dt><dd>{{ pct_input(cost_model.vat_rate) }}%</dd>
+    <dt>Vaste lasten per maand</dt><dd>{{ fmt_eur(cost_model.fixed_month_cents) }}</dd>
+    <dt>Levertijd leverancier</dt><dd>{{ cost_model.lead_time_days }} dagen</dd>
+    <dt>Veiligheidsfactor</dt><dd>{{ fmt_num(cost_model.safety_factor) }}</dd>
+    {% if cost_model.note %}<dt>Notitie</dt><dd>{{ cost_model.note }}</dd>{% endif %}
+  </dl>
+  <p>Break-even ROAS met dit model <span class="muted small">(op basis van de laatste 30 volledige dagen)</span>: <strong>{{ fmt_ratio(break_even_30d) }}</strong></p>
+  {% if cost_model.note and 'PLACEHOLDER' in cost_model.note %}
+  <div class="banner banner-warn">Dit is nog het placeholder-kostenmodel — vul hieronder jullie echte kosten in, anders kloppen de marges niet.</div>
+  {% endif %}
+  {% else %}
+  <div class="banner banner-warn">Er is nog geen kostenmodel — zonder kostenmodel kan Compass geen marges of signalen berekenen. Vul het hieronder in of draai <code>compass init</code>.</div>
+  {% endif %}
+
+  <h3>Nieuwe versie invoeren</h3>
+  <form class="stack-form wide" method="post" action="/instellingen/kostenmodel">
+    <div class="form-columns">
+      <label>Geldig vanaf
+        <input type="date" name="valid_from" value="{{ today.isoformat() }}">
+      </label>
+      <label>Inkoopprijs per stuk (COGS), €
+        <input type="text" name="cogs_eur" value="{{ eur_input(cost_model.cogs_per_unit_cents) if cost_model else '' }}" placeholder="6,50" required>
+      </label>
+      <label>Verzendkosten per order, €
+        <input type="text" name="shipping_eur" value="{{ eur_input(cost_model.shipping_per_order_cents) if cost_model else '' }}" placeholder="4,40" required>
+      </label>
+      <label>Standaard betaalfee, %
+        <input type="text" name="fee_pct" value="{{ pct_input(cost_model.fee_pct) if cost_model else '' }}" placeholder="1,5">
+      </label>
+      <label>Standaard betaalfee vast, €
+        <input type="text" name="fee_fixed_eur" value="{{ eur_input(cost_model.fee_fixed_cents) if cost_model else '' }}" placeholder="0,25">
+      </label>
+      <label>bol-commissie, %
+        <input type="text" name="bol_commission_pct" value="{{ pct_input(cost_model.bol_commission_pct) if cost_model else '' }}" placeholder="12,4">
+      </label>
+      <label>btw-tarief, %
+        <input type="text" name="vat_pct" value="{{ pct_input(cost_model.vat_rate) if cost_model else '9' }}" placeholder="9">
+      </label>
+      <label>Vaste lasten per maand, €
+        <input type="text" name="fixed_month_eur" value="{{ eur_input(cost_model.fixed_month_cents) if cost_model else '' }}" placeholder="400,00">
+      </label>
+      <label>Levertijd leverancier, dagen
+        <input type="text" name="lead_time_days" inputmode="numeric" value="{{ cost_model.lead_time_days if cost_model else '30' }}">
+      </label>
+      <label>Veiligheidsfactor
+        <input type="text" name="safety_factor" value="{{ fmt_num(cost_model.safety_factor) if cost_model else '1,3' }}">
+      </label>
+      <label>Notitie
+        <input type="text" name="note" placeholder="bijv. nieuwe inkoopprijs vanaf Q3">
+      </label>
+    </div>
+    <p class="muted small">Laat het btw-tarief bevestigen door jullie boekhouder.</p>
+
+    <h4>Betaalfees per methode <span class="muted small">(optioneel, max 4 — overschrijft de standaard betaalfee)</span></h4>
+    {% set pf_items = cost_model.payment_fees.items() | list if cost_model else [] %}
+    {% for i in range(1, 5) %}
+    {% set pf = pf_items[i - 1] if pf_items | length >= i else None %}
+    <div class="pf-row">
+      <label>Methode
+        <input type="text" name="pf_method_{{ i }}" value="{{ pf[0] if pf else '' }}" placeholder="ideal">
+      </label>
+      <label>%
+        <input type="text" name="pf_pct_{{ i }}" value="{{ pct_input(pf[1].pct) if pf else '' }}" placeholder="0">
+      </label>
+      <label>Vast, €
+        <input type="text" name="pf_fixed_{{ i }}" value="{{ eur_input(pf[1].fixed_cents) if pf else '' }}" placeholder="0,29">
+      </label>
+    </div>
+    {% endfor %}
+    <button class="btn btn-primary" type="submit">Kostenmodel opslaan als nieuwe versie</button>
+    <p class="muted small">Na het opslaan herrekent Compass alle dagcijfers: elke order gebruikt de kostenmodel-versie die op zijn besteldag gold.</p>
+  </form>
+
+  {% if history %}
+  <h3>Versiegeschiedenis</h3>
+  <table class="table">
+    <thead>
+      <tr><th>Geldig vanaf</th><th>COGS</th><th>Verzending</th><th>btw</th><th>Vaste lasten</th><th>Notitie</th></tr>
+    </thead>
+    <tbody>
+      {% for cm in history %}
+      <tr>
+        <td>{{ fmt_day(cm.valid_from) }}</td>
+        <td>{{ fmt_eur(cm.cogs_per_unit_cents) }}</td>
+        <td>{{ fmt_eur(cm.shipping_per_order_cents) }}</td>
+        <td>{{ pct_input(cm.vat_rate) }}%</td>
+        <td>{{ fmt_eur(cm.fixed_month_cents) }}</td>
+        <td>{{ cm.note or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Signaal-drempels</h2>
+  <p class="explain small">De drempels bepalen wanneer Compass een signaal afgeeft. De standaardwaarden zijn bewust voorzichtig; pas ze alleen aan als jullie weten waarom. {{ DISCLAIMER }}</p>
+  <form class="stack-form wide" method="post" action="/instellingen/drempels">
+    <div class="form-columns">
+      <label>Opschaalfactor — MER moet minstens zoveel × break-even zijn
+        <input type="text" name="mer_scale_factor" value="{{ fmt_num(thresholds['mer_scale_factor']) }}">
+      </label>
+      <label>CAC-tolerantie — toegestane stijging week-op-week (1,05 = 5%)
+        <input type="text" name="cac_tolerance" value="{{ fmt_num(thresholds['cac_tolerance']) }}">
+      </label>
+      <label>Spend-afwijkingsfactor — × het 7-daags gemiddelde
+        <input type="text" name="spend_anomaly_factor" value="{{ fmt_num(thresholds['spend_anomaly_factor']) }}">
+      </label>
+      <label>Reeks — dagen op rij dat de MER-voorwaarde moet gelden
+        <input type="text" name="streak_days" inputmode="numeric" value="{{ fmt_num(thresholds['streak_days']) }}">
+      </label>
+      <label>Minimum dagspend in centen (2500 = € 25)
+        <input type="text" name="min_spend_cents" inputmode="numeric" value="{{ fmt_num(thresholds['min_spend_cents']) }}">
+      </label>
+      <label>Cooldown — dagen tussen twee signalen van hetzelfde type
+        <input type="text" name="signal_cooldown_days" inputmode="numeric" value="{{ fmt_num(thresholds['signal_cooldown_days']) }}">
+      </label>
+    </div>
+    <button class="btn btn-primary" type="submit">Drempels opslaan</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Bronnen</h2>
+  <table class="table">
+    <thead>
+      <tr><th>Bron</th><th>Geconfigureerd</th><th>Data van – tot</th></tr>
+    </thead>
+    <tbody>
+      {% for src in sources %}
+      <tr>
+        <td>{{ src.label }}</td>
+        <td>
+          {% if src.configured %}<span class="chip chip-active">Ja</span>
+          {% else %}<span class="chip chip-stopped">Nee</span>{% endif %}
+        </td>
+        <td>{% if src.bounds %}{{ fmt_day(src.bounds[0]) }} – {{ fmt_day(src.bounds[1]) }}{% else %}nog geen data{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h3>Laatste runs</h3>
+  {% if runs %}
+  <table class="table">
+    <thead>
+      <tr><th>Gestart</th><th>Soort</th><th>Resultaat</th><th>Orders</th><th>Spend-regels</th></tr>
+    </thead>
+    <tbody>
+      {% for run in runs %}
+      <tr>
+        <td>{{ run['started_at'] }}</td>
+        <td>{{ run['kind'] }}</td>
+        <td>{% if run['ok'] %}<span class="chip chip-active">OK</span>{% else %}<span class="chip chip-bad">Fouten</span>{% endif %}</td>
+        <td>{{ nlnum(run['orders_upserted']) }}</td>
+        <td>{{ nlnum(run['spend_rows_upserted']) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">Nog geen runs gedaan.</p>
+  {% endif %}
+  <p class="muted small">Credentials instellen? Zie <code>compass/README.md</code> voor de stap-voor-stap uitleg per bron en test daarna met <code>compass verify</code>.</p>
+</section>
+{% endblock %}

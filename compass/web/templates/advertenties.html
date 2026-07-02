@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% from "_macros.html" import meta_vs_actual_table %}
+{% block title %}Advertenties{% endblock %}
+{% block content %}
+<h1>Advertenties <span class="muted small">({{ fmt_day(start) }} t/m {{ fmt_day(end) }})</span></h1>
+
+<div class="period-picker">
+  <span class="muted small">Periode:</span>
+  {% for w in windows %}
+  <a class="btn btn-small {{ 'btn-primary' if w == dagen else '' }}" href="/advertenties?dagen={{ w }}">{{ w }} dagen</a>
+  {% endfor %}
+</div>
+
+<section class="panel">
+  <h2>Campagnes <span class="muted">(laatste {{ dagen }} dagen)</span></h2>
+  {% if campaigns %}
+  <div class="table-scroll">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Campagne</th>
+        <th>Spend</th>
+        <th>Impressies</th>
+        <th>Clicks</th>
+        <th>CTR</th>
+        <th>Aankopen <span class="muted">(volgens Meta)</span></th>
+        <th>Waarde <span class="muted">(volgens Meta)</span></th>
+        <th>ROAS <span class="muted">(volgens Meta)</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in campaigns %}
+      <tr>
+        <td>{{ c.campaign_name }}</td>
+        <td>{{ fmt_eur(c.spend_cents) }}</td>
+        <td>{{ nlnum(c.impressions) }}</td>
+        <td>{{ nlnum(c.clicks) }}</td>
+        <td>{{ fmt_pct(c.ctr) }}</td>
+        <td>{{ nlnum(c.meta_purchases) }}</td>
+        <td>{{ fmt_eur(c.meta_purchase_value_cents) }}</td>
+        <td>{{ fmt_ratio(c.meta_roas) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty">Nog geen campagne-data in deze periode — draai <code>compass collect</code> of probeer <code>compass demo</code>.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Volgens Meta vs werkelijk <span class="muted">(zelfde periode)</span></h2>
+  {{ meta_vs_actual_table(meta_gap) }}
+  <p class="explain small">{{ attribution_explainer }}</p>
+</section>
+
+<section class="panel">
+  <h2>Spend per dag per campagne</h2>
+  <div class="chart-wrap">{{ chart_svg | safe }}</div>
+</section>
+
+{% if day_rows %}
+<section class="panel">
+  <details>
+    <summary>Dagregels per campagne ({{ day_rows|length }})</summary>
+    <div class="table-scroll">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Dag</th>
+          <th>Campagne</th>
+          <th>Spend</th>
+          <th>Impressies</th>
+          <th>Clicks</th>
+          <th>Aankopen <span class="muted">(volgens Meta)</span></th>
+          <th>Waarde <span class="muted">(volgens Meta)</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in day_rows %}
+        <tr>
+          <td>{{ row['day'] }}</td>
+          <td>{{ row['campaign_name'] or row['campaign_id'] }}</td>
+          <td>{{ fmt_eur(row['spend_cents']) }}</td>
+          <td>{{ nlnum(row['impressions']) }}</td>
+          <td>{{ nlnum(row['clicks']) }}</td>
+          <td>{{ nlnum(row['meta_purchases']) }}</td>
+          <td>{{ fmt_eur(row['meta_purchase_value_cents']) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </details>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stat_card, verdict_block %}
+{% block title %}Voorraad{% endblock %}
+{% block content %}
+<h1>Voorraad</h1>
+
+{% if fout %}
+<div class="banner banner-warn">Kon de telling niet opslaan — vul een heel getal in (bijv. 1500).</div>
+{% endif %}
+
+<section class="panel">
+  <h2>Stand</h2>
+  <div class="stats">
+    {% if inventory %}
+    {{ stat_card("Voorraad", nlnum(inventory.units) ~ " stuks", "bron: " ~ inventory.source ~ " · peildatum " ~ fmt_day(inventory.day)) }}
+    {% else %}
+    {{ stat_card("Voorraad", "—", "nog geen stand bekend") }}
+    {% endif %}
+    {{ stat_card("Verkoopsnelheid", fmt_ratio(sales_rate, 1) ~ " per dag", "gewogen over 30 dagen") }}
+    {{ stat_card("Dagen voorraad", nlnum(days_left|int) if days_left is not none else "—") }}
+    {% if reorder_units is not none %}
+    {{ stat_card("Bestelpunt", nlnum(reorder_units|round|int) ~ " stuks", "= " ~ fmt_num(threshold_days) ~ " dagen (levertijd × veiligheidsfactor)") }}
+    {% else %}
+    {{ stat_card("Bestelpunt", "—", "vul eerst het kostenmodel in") }}
+    {% endif %}
+    {{ stat_card("Verwachte uitverkoopdatum", fmt_day(sellout) if sellout else "—") }}
+  </div>
+  {{ verdict_block(verdict) }}
+  <p class="muted small">{{ DISCLAIMER }}</p>
+</section>
+
+<section class="panel">
+  <h2>Voorraadverloop <span class="muted">(90 dagen)</span></h2>
+  <div class="chart-wrap">{{ chart_svg | safe }}</div>
+</section>
+
+<section class="panel">
+  <h2>Handmatige telling</h2>
+  <form class="stack-form" method="post" action="/voorraad/handmatig">
+    <label>Aantal stuks op voorraad (geteld vandaag)
+      <input type="text" name="units" inputmode="numeric" placeholder="bijv. 1500" required>
+    </label>
+    <button class="btn btn-primary" type="submit">Telling opslaan</button>
+  </form>
+  <p class="muted small">Een handmatige telling geldt voor vandaag en overschrijft voor die dag het aantal uit Shopify — de telling in het magazijn wint.</p>
+</section>
+{% endblock %}
