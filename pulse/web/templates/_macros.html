@@ -1,0 +1,63 @@
+{# Reusable building blocks for item lists. #}
+
+{% macro chips(item) %}
+  <span class="chip chip-source">{{ item['source_name'] }}</span>
+  {% if item['competitor_name'] %}
+    <span class="chip chip-competitor">{{ item['competitor_name'] }}</span>
+  {% endif %}
+  {% if item['health_flag'] or (item['analyzed_at'] is none and item['pre_health_flag']) %}
+    <span class="chip chip-health">⚕ gezondheid</span>
+  {% endif %}
+  {% if item['urgency'] == 'urgent' and not item['health_flag'] %}
+    <span class="chip chip-urgent">urgent</span>
+  {% endif %}
+  {% if item['sentiment'] %}
+    <span class="chip chip-{{ item['sentiment'] }}">{{ sentiment_labels[item['sentiment']] }}</span>
+  {% endif %}
+  {% if item['item_type'] %}
+    <span class="chip">{{ type_labels[item['item_type']] }}</span>
+  {% endif %}
+  {% for theme in (item['themes_json'] | fromjson) %}
+    <span class="chip chip-theme">{{ theme_label(theme) }}</span>
+  {% endfor %}
+  {% if item['analyzed_at'] is none %}
+    <span class="chip chip-pending">wacht op analyse</span>
+  {% endif %}
+{% endmacro %}
+
+{% macro follow_up_button(item, next_url) %}
+  <form method="post" action="/item/{{ item['id'] }}/opvolgen" class="inline-form">
+    <input type="hidden" name="next" value="{{ next_url }}">
+    {% if item['followed_up_at'] %}
+      <input type="hidden" name="done" value="0">
+      <button type="submit" class="btn btn-quiet" title="Opgevolgd op {{ item['followed_up_at'] | day }}">✓ opgevolgd — maak ongedaan</button>
+    {% else %}
+      <input type="hidden" name="done" value="1">
+      <button type="submit" class="btn">Markeer als opgevolgd</button>
+    {% endif %}
+  </form>
+{% endmacro %}
+
+{% macro item_card(item, next_url, show_follow_up=False) %}
+  <article class="item-card {{ 'is-health' if (item['health_flag'] or (item['analyzed_at'] is none and item['pre_health_flag'])) else '' }} {{ 'is-done' if item['followed_up_at'] else '' }}">
+    <div class="item-meta">
+      <span class="item-date">{{ (item['happened_at'] or item['first_seen']) | day }}</span>
+      <span class="item-author">{{ item['author_display'] or 'anoniem' }}</span>
+      {{ chips(item) }}
+    </div>
+    <p class="item-text"><a href="/item/{{ item['id'] }}?terug={{ next_url | urlencode }}">{{ item['text'][:260] }}{% if item['text'] | length > 260 %}…{% endif %}</a></p>
+    {% if show_follow_up %}
+      <div class="item-actions">{{ follow_up_button(item, next_url) }}</div>
+    {% endif %}
+  </article>
+{% endmacro %}
+
+{% macro pagination(page, total_pages, params) %}
+  {% if total_pages > 1 %}
+  <nav class="pagination">
+    {% if page > 1 %}<a href="{{ qs(params, page=page-1) }}">← vorige</a>{% endif %}
+    <span>pagina {{ page }} van {{ total_pages }}</span>
+    {% if page < total_pages %}<a href="{{ qs(params, page=page+1) }}">volgende →</a>{% endif %}
+  </nav>
+  {% endif %}
+{% endmacro %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_macros.html" import item_card %}
+{% block title %}Urgent{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Urgent</h1>
+  <p class="lead">
+    Meldingen met een mogelijk <strong>gezondheidssignaal</strong> staan bovenaan en zijn rood gemarkeerd.
+    Neem ze vandaag op — Pulse markeert alleen, jullie volgen op.
+  </p>
+</div>
+
+{% if show_all %}
+  <p><a href="/urgent">← Toon alleen openstaande</a></p>
+{% else %}
+  <p class="muted">{{ n_open }} openstaand · <a href="/urgent?alles=1">toon ook opgevolgde</a></p>
+{% endif %}
+
+{% if not items %}
+  <div class="empty-state">
+    <p>🎉 Geen openstaande urgente meldingen.</p>
+    <p class="muted">Nieuwe gezondheidssignalen en urgente klachten verschijnen hier vanzelf na elke <code>pulse collect</code> of import.</p>
+  </div>
+{% endif %}
+
+{% for item in items %}
+  {{ item_card(item, '/urgent', show_follow_up=True) }}
+{% endfor %}
+{% endblock %}

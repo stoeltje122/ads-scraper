@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "adscout"
 version = "0.1.0"
-description = "AdScout — Meta Ads competitive intelligence for Cloudplunge (internal tool)"
+description = "AdScout + Pulse — competitive intelligence & feedback listening for Cloudplunge (internal tools)"
 requires-python = ">=3.11"
 dependencies = [
     "httpx==0.28.1",
@@ -21,15 +21,22 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest==9.1.1"]
 ai = ["anthropic>=0.40,<1.0"]
+gmail = [
+    "google-api-python-client==2.198.0",
+    "google-auth-oauthlib==1.4.0",
+    "google-auth-httplib2==0.4.0",
+]
 
 [project.scripts]
 adscout = "adscout.cli:main"
+pulse = "pulse.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["adscout*"]
+include = ["adscout*", "pulse*"]
 
 [tool.setuptools.package-data]
 adscout = ["migrations/*.sql", "web/templates/**/*.html", "web/static/*"]
+pulse = ["migrations/*.sql", "web/templates/**/*.html", "web/static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

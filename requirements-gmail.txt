@@ -1,0 +1,8 @@
+# Extra dependencies for the Pulse Gmail adapter (support-mail ophalen).
+# Alleen nodig zodra je Gmail echt koppelt; zonder deze pakketten werkt de
+# rest van Pulse volledig. Installeer met:
+#   pip install -r requirements-gmail.txt
+-r requirements.txt
+google-api-python-client==2.198.0
+google-auth-oauthlib==1.4.0
+google-auth-httplib2==0.4.0

@@ -1,0 +1,58 @@
+# Seed-taxonomie voor `pulse init`: de thema's waarmee de AI feedback labelt.
+# Alleen gebruikt bij eerste initialisatie; daarna beheer je thema's via het
+# dashboard (Beheer → Thema's) of `pulse theme ...`. Bestaande thema's in de
+# database winnen altijd van dit bestand.
+#
+# De slug is wat de AI teruggeeft en wat in filters verschijnt; kies korte,
+# herkenbare woorden. Beschrijvingen helpen de AI (ze gaan mee in de prompt).
+
+themes:
+  - slug: werking-inslapen
+    description: "Effect op inslapen: sneller of juist niet in slaap vallen."
+
+  - slug: werking-doorslapen
+    description: "Effect op doorslapen: 's nachts wakker worden, onrustige nachten."
+
+  - slug: werking-herstel
+    description: "Uitgerust wakker worden, energie overdag, herstel."
+
+  - slug: geen-effect
+    description: "Klant merkt geen of nauwelijks effect van het product."
+
+  - slug: bijwerking-gezondheid
+    description: >-
+      Mogelijke bijwerking of gezondheidsklacht: hoofdpijn, misselijkheid,
+      duizeligheid, hartkloppingen, interactie met medicijnen, zwangerschap
+      of borstvoeding, allergische reactie. Altijd urgent.
+
+  - slug: levering-verzending
+    description: "Bezorging: te laat, kwijt, verkeerd adres, track & trace."
+
+  - slug: bestelling-betaling
+    description: "Bestelproces en betaling: dubbele afschrijving, order niet ontvangen in mail."
+
+  - slug: product-capsule-smaak-verpakking
+    description: "Het fysieke product: capsulegrootte, smaak, geur, verpakking, pot."
+
+  - slug: prijs-korting
+    description: "Prijs, kortingscodes, abonnementskorting, prijs-kwaliteit."
+
+  - slug: ingredientvraag
+    description: >-
+      Vragen over ingrediënten en samenstelling, waaronder de veelgestelde
+      vraag of er melatonine in zit (nee, bewust niet).
+
+  - slug: gebruik-dosering
+    description: "Hoe en wanneer innemen, hoeveel capsules, hoe lang gebruiken."
+
+  - slug: retour-geldterug
+    description: "Retourneren, geld-terug-garantie, annuleren van een bestelling."
+
+  - slug: klantenservice-ervaring
+    description: "Ervaring met de klantenservice zelf: reactiesnelheid, toon, oplossing."
+
+  - slug: website-shop
+    description: "De webshop of bol-pagina: fouten, onduidelijke info, checkout-problemen."
+
+  - slug: overig
+    description: "Alles wat nergens anders past."
