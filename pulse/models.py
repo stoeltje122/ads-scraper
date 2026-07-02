@@ -37,14 +37,28 @@ def author_hash(identifier: str | None) -> str | None:
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
-def content_hash(text: str, author: str | None, happened_at: str | None) -> str:
-    """Dedupe key for manual imports: hash of text + author + date.
+def content_hash(
+    text: str,
+    author: str | None,
+    happened_at: str | None,
+    competitor: str | None = None,
+) -> str:
+    """Dedupe key for manual imports: hash of text + author + date (+ the
+    competitor, so an identical short review about two different brands is
+    not collapsed into one).
 
     Whitespace is collapsed so re-pasting the same review with an extra
     newline does not create a duplicate.
     """
     collapsed = " ".join(text.split())
-    payload = "\n".join([collapsed, (author or "").strip().casefold(), (happened_at or "")[:10]])
+    payload = "\n".join(
+        [
+            collapsed,
+            (author or "").strip().casefold(),
+            (happened_at or "")[:10],
+            (competitor or "").strip().casefold(),
+        ]
+    )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 

@@ -101,9 +101,12 @@ def get_source(conn: sqlite3.Connection, type_: str) -> sqlite3.Row | None:
 
 
 def list_sources(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    # The i.id IS NOT NULL guard keeps a source with zero items from
+    # counting its empty LEFT-JOIN row as one unanalyzed item.
     return conn.execute(
         """SELECT s.*, COUNT(i.id) AS n_items,
-                  SUM(CASE WHEN a.item_id IS NULL THEN 1 ELSE 0 END) AS n_unanalyzed
+                  SUM(CASE WHEN i.id IS NOT NULL AND a.item_id IS NULL
+                           THEN 1 ELSE 0 END) AS n_unanalyzed
            FROM sources s
            LEFT JOIN items i ON i.source_id = s.id
            LEFT JOIN analyses a ON a.item_id = i.id
@@ -369,10 +372,20 @@ def mark_analysis_failure(conn: sqlite3.Connection, item_id: int, error: str) ->
 # ── Privacy: forget & retention ──────────────────────────────────────
 
 
+def _drop_orphan_threads(conn: sqlite3.Connection) -> None:
+    """Threads whose items are all gone must go too: a thread subject can
+    itself contain a person's name (AVG)."""
+    conn.execute(
+        "DELETE FROM threads WHERE id NOT IN "
+        "(SELECT DISTINCT thread_id FROM items WHERE thread_id IS NOT NULL)"
+    )
+
+
 def forget(conn: sqlite3.Connection, hash_or_email: str) -> int:
     """Delete every item of one person (AVG). Accepts the author-hash as
     shown in the dashboard, or the raw e-mail address (hashed on the spot,
-    not stored). Analyses cascade via the foreign key."""
+    not stored). Analyses cascade via the foreign key; mail threads that
+    end up empty are removed too (their subject can contain the name)."""
     value = hash_or_email.strip()
     candidates = {value.casefold(), author_hash(value)}
     placeholders = ",".join("?" for _ in candidates)
@@ -380,6 +393,7 @@ def forget(conn: sqlite3.Connection, hash_or_email: str) -> int:
         f"DELETE FROM items WHERE author_hash IN ({placeholders})",
         tuple(candidates),
     )
+    _drop_orphan_threads(conn)
     conn.commit()
     logger.info("Vergeten: %d items verwijderd", cur.rowcount)
     return cur.rowcount
@@ -419,15 +433,15 @@ def retention_cleanup(conn: sqlite3.Connection, now_iso: str | None = None) -> i
     months = retention_months(conn)
     now = now_iso or utc_now_iso()
     cutoff_expr = f"-{int(months * 30.44)} days"
+    # Compare calendar days, not raw strings: stored timestamps use 'T' as
+    # separator while sqlite's datetime() emits a space, which would skew a
+    # lexicographic comparison on the cutoff day itself.
     cur = conn.execute(
         """DELETE FROM items
-           WHERE COALESCE(happened_at, first_seen) < datetime(?, ?)""",
+           WHERE date(COALESCE(happened_at, first_seen)) < date(datetime(?, ?))""",
         (now, cutoff_expr),
     )
-    # Threads whose items are all gone are stale; remove them too.
-    conn.execute(
-        "DELETE FROM threads WHERE id NOT IN (SELECT DISTINCT thread_id FROM items WHERE thread_id IS NOT NULL)"
-    )
+    _drop_orphan_threads(conn)
     conn.commit()
     if cur.rowcount:
         logger.info("Retentie-opschoning: %d items ouder dan %d maanden verwijderd", cur.rowcount, months)

@@ -82,8 +82,11 @@ def _qs(params: dict, **overrides) -> str:
 
 
 def _safe_next(value: str | None, fallback: str = "/urgent") -> str:
-    """Only same-site paths as redirect target (no open redirect)."""
-    if value and value.startswith("/") and not value.startswith("//"):
+    """Only same-site paths as redirect target (no open redirect).
+
+    Backslashes are rejected too: browsers treat '/\\evil.com' like
+    '//evil.com' (protocol-relative)."""
+    if value and value.startswith("/") and not value.startswith("//") and "\\" not in value:
         return value
     return fallback
 

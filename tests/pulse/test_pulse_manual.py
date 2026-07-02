@@ -73,3 +73,22 @@ def test_channel_routing():
 def test_unknown_date_format_is_dropped_not_fatal():
     items = parse_csv("tekst,datum\nPrima product,ergens in juni\n")
     assert items[0].happened_at is None
+
+
+def test_dangerous_url_schemes_are_dropped():
+    """Regression (stored XSS): only http(s) URLs survive an import."""
+    items = parse_csv(
+        "tekst,url\n"
+        "review a,javascript:alert(1)\n"
+        "review b,https://nl.trustpilot.com/x\n"
+        "review c,data:text/html;base64:x\n"
+    )
+    assert items[0].url is None
+    assert items[1].url == "https://nl.trustpilot.com/x"
+    assert items[2].url is None
+
+
+def test_single_text_column_keeps_commas():
+    """Regression: a one-column file must not be split on commas in the text."""
+    items = parse_csv("tekst\nWerkt goed, snel geleverd, aanrader!\n")
+    assert items[0].text == "Werkt goed, snel geleverd, aanrader!"

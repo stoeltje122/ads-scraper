@@ -3,9 +3,11 @@
 This is the safety net UNDER the AI analysis, not a replacement: it runs at
 store time, needs no API key, and errs on the side of flagging. A flagged
 item shows up in the Urgent view immediately — even while it is still
-waiting in the analysis queue. After AI analysis the AI verdict drives the
-urgent view; the keyword hit stays visible on the item detail page so the
-founders can always see why something was pre-flagged.
+waiting in the analysis queue — and it STAYS there until a human marks it
+'opgevolgd', even when the AI later judges it not health-related: a keyword
+hit plus an AI 'no' is by definition doubt, and doubt means a human looks.
+The matched keywords stay visible on the item detail page so the founders
+can always see why something was pre-flagged.
 
 Pulse never gives medical advice and never diagnoses; it only marks items
 for human follow-up.

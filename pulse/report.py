@@ -31,9 +31,10 @@ def _excerpt(text: str, limit: int = EXCERPT_CHARS) -> str:
 
 
 def collect_week_data(conn: sqlite3.Connection, today: date | None = None) -> dict:
-    """All numbers for one weekly report (7-day window ending today)."""
+    """All numbers for one weekly report (7-day window: today-6 .. today,
+    matching queries.week_over_week)."""
     today = today or date.today()
-    start = today - timedelta(days=7)
+    start = today - timedelta(days=6)
     start_iso, end_iso = start.isoformat(), (today + timedelta(days=1)).isoformat()
 
     per_source = conn.execute(

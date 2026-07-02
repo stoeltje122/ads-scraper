@@ -110,3 +110,20 @@ def test_mark_analysis_failure_keeps_item_in_queue(pulse_seeded_db):
         "SELECT analysis_attempts, analysis_error FROM items WHERE id = ?", (item_id,)
     ).fetchone()
     assert row["analysis_attempts"] == 1 and "kapotte" in row["analysis_error"]
+
+
+def test_list_sources_no_phantom_queue(pulse_seeded_db):
+    """Regression: a source with zero items showed '1 wachten op analyse'."""
+    for src in store.list_sources(pulse_seeded_db):
+        assert (src["n_unanalyzed"] or 0) == 0, src["name"]
+
+
+def test_forget_removes_orphan_threads(pulse_seeded_db):
+    src = store.get_source(pulse_seeded_db, "gmail")
+    store.store_items(pulse_seeded_db, src["id"], [
+        FeedbackItem("m1", "mail van p", author_ref="p@q.nl",
+                     thread_external_id="t-1", thread_subject="Klacht van P. Jansen"),
+    ])
+    assert pulse_seeded_db.execute("SELECT COUNT(*) FROM threads").fetchone()[0] == 1
+    store.forget(pulse_seeded_db, "p@q.nl")
+    assert pulse_seeded_db.execute("SELECT COUNT(*) FROM threads").fetchone()[0] == 0

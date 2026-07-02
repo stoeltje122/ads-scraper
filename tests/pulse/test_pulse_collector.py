@@ -83,3 +83,30 @@ def test_import_routes_channels_to_matching_sources(pulse_seeded_db):
     assert per_source["bol-reviews"] == 3
     run = pulse_seeded_db.execute("SELECT * FROM runs WHERE kind='import'").fetchone()
     assert run["items_new"] == 10
+
+
+def test_fixture_collect_ignores_since_forever(pulse_seeded_db, pulse_settings):
+    """Regression: the demo must still work years from now (fixture dates
+    are fixed; the since-backfill window must not apply in fixture mode)."""
+    from datetime import datetime, timezone
+
+    far_future = datetime(2030, 1, 1, tzinfo=timezone.utc)
+    result = collector.collect(
+        pulse_seeded_db, pulse_settings, fixture_dir=PULSE_FIXTURE_DIR, now=far_future
+    )
+    assert result.items_new == 25
+
+
+def test_import_dedupes_across_channels(pulse_seeded_db):
+    """Regression: the same review pasted with and without a kanaal must
+    not be stored twice."""
+    from pulse.sources.manual import parse_paste
+
+    first = parse_paste("Identieke review", competitor="8hours", channel_label="trustpilot")
+    second = parse_paste("Identieke review", competitor="8hours", channel_label=None)
+    collector.import_items(pulse_seeded_db, first)
+    result = collector.import_items(pulse_seeded_db, second)
+    assert result.items_new == 0
+    assert pulse_seeded_db.execute(
+        "SELECT COUNT(*) FROM items WHERE text = 'Identieke review'"
+    ).fetchone()[0] == 1

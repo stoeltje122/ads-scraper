@@ -57,11 +57,15 @@ def collect(
 
         try:
             adapter = build_adapter(source["type"], settings, fixture_dir=fixture_dir)
-            since = _since_for(source, settings, now)
+            # Fixture mode ignores `since`: the committed sample data has
+            # fixed dates and must keep working (demo, tests) forever.
+            since = None if fixture_dir is not None else _since_for(source, settings, now)
             items = adapter.collect(since)
             sr.items_seen, sr.items_new = store.store_items(conn, source["id"], items)
-            if not items:
-                sr.warning = "0 items opgehaald — klopt de configuratie nog?"
+            if not items and fixture_dir is None and not source["last_run"]:
+                # Only the very first real run warns: an empty backfill
+                # usually means misconfiguration. Later quiet days are normal.
+                sr.warning = "0 items opgehaald — klopt de configuratie?"
             if fixture_dir is None:
                 store.touch_source_run(conn, source["id"], now.isoformat(timespec="seconds"))
         except CredentialsError as exc:
@@ -110,9 +114,26 @@ def import_items(conn: sqlite3.Connection, items: list[FeedbackItem]) -> RunResu
 
     A row with kanaal 'trustpilot' attaches to the Trustpilot source so the
     dashboard filters work; everything else lands under 'Handmatige
-    import'. Recorded in the runs table like any other run.
+    import'. Dedupe is cross-channel: the same review pasted once with and
+    once without a kanaal still counts as one (content hashes are global
+    enough that a match across sources is the same text, not a collision).
+    Recorded in the runs table like any other run.
     """
     result = RunResult(started_at=utc_now_iso())
+
+    known: set[str] = set()
+    ids = [item.external_id for item in items]
+    for offset in range(0, len(ids), 500):  # sqlite parameter limit safety
+        chunk = ids[offset:offset + 500]
+        known.update(
+            row[0]
+            for row in conn.execute(
+                f"SELECT external_id FROM items WHERE external_id IN "
+                f"({','.join('?' for _ in chunk)})",
+                chunk,
+            )
+        )
+
     by_type: dict[str, list[FeedbackItem]] = {}
     for item in items:
         channel = (item.raw or {}).get("kanaal")
@@ -123,7 +144,9 @@ def import_items(conn: sqlite3.Connection, items: list[FeedbackItem]) -> RunResu
         if source is None:  # unknown type can only mean a corrupted sources table
             source = store.get_source(conn, "manual")
         sr = SourceResult(source=source["name"])
-        sr.items_seen, sr.items_new = store.store_items(conn, source["id"], group)
+        fresh = [i for i in group if i.external_id not in known]
+        _, sr.items_new = store.store_items(conn, source["id"], fresh)
+        sr.items_seen = len(group)  # cross-channel duplicates count as seen
         result.per_source.append(sr)
 
     result.finished_at = utc_now_iso()

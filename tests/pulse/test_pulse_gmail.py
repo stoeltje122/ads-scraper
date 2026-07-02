@@ -89,3 +89,37 @@ def test_extract_body_prefers_plain_text():
         ],
     }
     assert extract_body_text(payload) == "plain"
+
+
+def test_forward_header_block_is_cut_but_inline_van_is_not():
+    """Regression: 'Van:' only counts as quote header in a real header block."""
+    forwarded = (
+        "Zie onderstaande klacht.\n\n"
+        "Van: Klant <k@x.nl>\nVerzonden: maandag\nAan: info@cloudplunge.com\n"
+        "Onderwerp: klacht\n\nHele oude tekst"
+    )
+    assert strip_quoted_reply(forwarded) == "Zie onderstaande klacht."
+
+    inline = "Van: de webshop kreeg ik geen antwoord.\nDaarom mail ik jullie nu."
+    assert "Daarom mail ik jullie nu." in strip_quoted_reply(inline)
+
+
+def test_fully_quoted_mail_falls_back_to_original():
+    """A customer's words are never silently discarded."""
+    only_forward = (
+        "Van: Klant <k@x.nl>\nVerzonden: maandag\nAan: ons\n\n"
+        "Ik ben erg ontevreden over mijn bestelling."
+    )
+    result = strip_quoted_reply(only_forward)
+    assert "ontevreden" in result
+
+
+def test_author_display_never_falls_back_to_address(pulse_settings):
+    adapter = GmailAdapter(pulse_settings, fixture_dir=PULSE_FIXTURE_DIR)
+    msg = adapter._fixture_messages()[0]
+    for header in msg["payload"]["headers"]:
+        if header["name"] == "From":
+            header["value"] = "naamloos@voorbeeld.nl"  # no display name
+    item = adapter.parse_message(msg)
+    assert item.author_display is None
+    assert item.author_ref == "naamloos@voorbeeld.nl"

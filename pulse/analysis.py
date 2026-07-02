@@ -176,7 +176,10 @@ def parse_analysis(
     if not themes:
         themes = [FALLBACK_THEME] if FALLBACK_THEME in active_slugs else []
 
-    health_flag = bool(data.get("health_flag")) or HEALTH_THEME in themes
+    raw_flag = data.get("health_flag")
+    if isinstance(raw_flag, str):  # the model may answer "true"/"false" as text
+        raw_flag = raw_flag.strip().casefold() in ("true", "ja", "yes", "1")
+    health_flag = bool(raw_flag) or HEALTH_THEME in themes
     if health_flag:
         urgency = "urgent"
         if HEALTH_THEME in active_slugs and HEALTH_THEME not in themes:

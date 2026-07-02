@@ -65,8 +65,16 @@ def init() -> None:
     n_themes = n_comp = 0
     if Path("pulse-taxonomy.seed.yaml").exists():
         n_themes = store.seed_themes(conn, "pulse-taxonomy.seed.yaml")
+    else:
+        typer.secho(
+            "⚠ pulse-taxonomy.seed.yaml niet gevonden — sta je wel in de projectmap "
+            "(ads-scraper)? Zonder thema's kan de AI-analyse niet draaien.",
+            fg="yellow",
+        )
     if Path("competitors.seed.yaml").exists():
         n_comp = store.seed_competitors(conn, "competitors.seed.yaml")
+    else:
+        typer.secho("⚠ competitors.seed.yaml niet gevonden — watchlist blijft leeg.", fg="yellow")
     typer.echo(f"✓ Database klaar: {settings.db_path}")
     typer.echo(f"✓ Bronnen geseed: {n_src} nieuw (van {len(store.STANDARD_SOURCES)})")
     typer.echo(f"✓ Thema's geseed: {n_themes}")
@@ -279,11 +287,30 @@ def status() -> None:
             "wachtrij. Zie PULSE.md, sectie 'AI-analyse aanzetten'."
         )
 
-    typer.echo("\nBronnen:")
+    typer.echo("\nBronnen (credential-gezondheid zonder netwerk; echte test: pulse verify):")
+    from pulse.sources import build_adapter
+    from pulse.sources.gmail import GmailAdapter
+
     for src in store.list_sources(conn):
         label = store.STATUS_LABELS_NL.get(src["status"], src["status"])
         last = src["last_run"] or "nooit"
-        typer.echo(f"  {src['name']}: {label} — {src['n_items']} items — laatste run: {last}")
+        adapter = build_adapter(src["type"], settings)
+        if src["type"] == "gmail":
+            gmail: GmailAdapter = adapter
+            cred = (
+                "gekoppeld" if gmail.authorized
+                else "credentials aanwezig, nog niet ingelogd (pulse verify gmail)"
+                if gmail.configured else "geen credentials"
+            )
+        elif src["type"] == "meta_comments":
+            cred = "token ingesteld" if adapter.configured else "geen token in .env"
+        elif src["type"] == "manual":
+            cred = "geen configuratie nodig"
+        else:
+            cred = "handmatige route (zie PULSE.md)"
+        typer.echo(
+            f"  {src['name']}: {label} — {cred} — {src['n_items']} items — laatste run: {last}"
+        )
 
     typer.echo("\nLaatste runs:")
     runs = queries.last_runs(conn, limit=5)

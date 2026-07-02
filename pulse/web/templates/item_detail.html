@@ -4,7 +4,7 @@
 {% block content %}
 <p><a href="{{ back }}">← terug</a></p>
 
-<article class="detail {{ 'is-health' if (item['health_flag'] or (item['analyzed_at'] is none and item['pre_health_flag'])) else '' }}">
+<article class="detail {{ 'is-health' if (item['health_flag'] or item['pre_health_flag']) else '' }}">
   <div class="item-meta">
     <span class="item-date">{{ (item['happened_at'] or item['first_seen']) }}</span>
     <span class="item-author">{{ item['author_display'] or 'anoniem' }}</span>
@@ -15,7 +15,9 @@
 
   <div class="detail-actions">
     {{ follow_up_button(item, '/item/' ~ item['id']) }}
-    {% if item['url'] %}<a class="btn btn-quiet" href="{{ item['url'] }}" target="_blank" rel="noopener noreferrer">Bekijk origineel ↗</a>{% endif %}
+    {# Scheme guard (defense in depth next to the import-time check): never
+       render javascript:/data: URLs as a clickable link. #}
+    {% if item['url'] and (item['url'].startswith('https://') or item['url'].startswith('http://')) %}<a class="btn btn-quiet" href="{{ item['url'] }}" target="_blank" rel="noopener noreferrer">Bekijk origineel ↗</a>{% endif %}
   </div>
 
   <dl class="detail-facts">

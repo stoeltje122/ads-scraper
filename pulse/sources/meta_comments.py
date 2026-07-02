@@ -115,18 +115,21 @@ class MetaCommentsAdapter(SourceAdapter):
             next_url = (data.get("paging") or {}).get("next")
             if not next_url:
                 break
-            url, params = next_url, {}  # next already carries the query string
+            # paging.next carries the full query string (token, cursor,
+            # fields). params must be None here: httpx replaces the URL's
+            # query with `params` whenever params is not None — even {}.
+            url, params = next_url, None
         # Follow nested comment paging so busy posts are complete.
         for post in posts:
             comments = post.get("comments") or {}
             next_url = (comments.get("paging") or {}).get("next")
             while next_url:
-                data = self._get(next_url, {})
+                data = self._get(next_url)
                 comments.setdefault("data", []).extend(data.get("data", []))
                 next_url = (data.get("paging") or {}).get("next")
         return posts
 
-    def _get(self, url: str, params: dict) -> dict:
+    def _get(self, url: str, params: dict | None = None) -> dict:
         try:
             resp = self._client.get(url, params=params)
         except httpx.HTTPError as exc:
@@ -136,8 +139,9 @@ class MetaCommentsAdapter(SourceAdapter):
             error = (body.get("error") or {})
             if error.get("code") == 190:
                 raise CredentialsError(
-                    "Meta Page-token verlopen of ongeldig (fout 190). "
-                    "Genereer een nieuwe: zie PULSE.md, sectie 'Page-token vernieuwen'."
+                    "Meta Page-token verlopen of ongeldig (fout 190). Genereer een "
+                    "nieuwe: zie PULSE.md, sectie 'Facebook/Instagram-reacties "
+                    "koppelen' (5 minuten werk)."
                 )
             raise SourceError(
                 f"Meta API-fout {resp.status_code}: {error.get('message', resp.text[:200])}"

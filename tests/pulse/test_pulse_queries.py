@@ -72,3 +72,23 @@ def test_counts_summary(pulse_demo_db):
     assert summary["analyzed"] == 35
     assert summary["queue"] == 0
     assert summary["urgent_open"] == 6
+
+
+def test_keyword_flag_survives_ai_disagreement(pulse_seeded_db):
+    """Regression: a keyword-flagged item stays in Urgent even when the AI
+    judges it not health-related — doubt means a human looks."""
+    from pulse.models import AnalysisResult, FeedbackItem
+
+    src = store.get_source(pulse_seeded_db, "manual")
+    store.store_items(pulse_seeded_db, src["id"], [
+        FeedbackItem("k1", "Sinds de capsules heb ik hartkloppingen"),
+    ])
+    item_id = pulse_seeded_db.execute("SELECT id FROM items").fetchone()[0]
+    assert queries.count_urgent_open(pulse_seeded_db) == 1
+    # A plausible model miss: not health, normal urgency.
+    store.save_analysis(pulse_seeded_db, item_id, AnalysisResult(
+        sentiment="negative", themes=["overig"], urgency="normal",
+        type="complaint", health_flag=False, confidence=0.6), model="test")
+    assert queries.count_urgent_open(pulse_seeded_db) == 1  # still visible
+    store.mark_followed_up(pulse_seeded_db, item_id)
+    assert queries.count_urgent_open(pulse_seeded_db) == 0  # human decided

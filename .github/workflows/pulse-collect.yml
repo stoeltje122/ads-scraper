@@ -1,14 +1,15 @@
 # Pulse dagelijkse verzamel- en analyse-run op GitHub Actions.
 # LET OP: alleen gebruiken op een PRIVE repository — de workflow commit de
 # SQLite-database met klantfeedback (persoonsgegevens!) terug naar de repo.
+# Het Gmail-token gaat NIET in git: dat leeft als Actions-secret.
 #
 # Standaard staat de schedule UIT (uitgecommentarieerd): deze route vereist
 # eenmalige lokale bootstrap + secrets. Setup:
 #   1. Lokaal: pulse init, Gmail koppelen (PULSE.md sectie 4) en één keer
-#      `pulse collect` draaien. Commit daarna de database + het Gmail-token:
-#      git add -f data/ && git commit -m "bootstrap pulse data" && git push
-#      (het token is een wachtwoord-equivalent — nogmaals: PRIVE repo!)
+#      `pulse collect` draaien. Commit daarna alleen de database:
+#      git add -f data/pulse.db && git commit -m "bootstrap pulse data" && git push
 #   2. Secrets zetten (Settings → Secrets and variables → Actions):
+#      GMAIL_TOKEN_JSON  = de volledige inhoud van data/gmail/token.json
 #      META_PAGE_TOKEN, PULSE_META_PAGE_ID, ANTHROPIC_API_KEY (optioneel).
 #   3. De twee cron-regels hieronder ont-commentariëren.
 name: Pulse daily collect
@@ -54,6 +55,17 @@ jobs:
           echo "PULSE_META_PAGE_ID=${{ secrets.PULSE_META_PAGE_ID }}" >> "$GITHUB_ENV"
           echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> "$GITHUB_ENV"
 
+      - name: Gmail-token uit secret schrijven (nooit in git)
+        # The interactive OAuth flow cannot run here; the token from the
+        # one-time local login lives as a secret and is written per run.
+        run: |
+          if [ -n "${{ secrets.GMAIL_TOKEN_JSON }}" ]; then
+            mkdir -p data/gmail
+            printf '%s' "${{ secrets.GMAIL_TOKEN_JSON }}" > data/gmail/token.json
+          else
+            echo "Geen GMAIL_TOKEN_JSON-secret — Gmail-bron wordt overgeslagen."
+          fi
+
       - name: Database controleren (eenmalige bootstrap vereist)
         # The repo is the persistent storage for this route: the initialized
         # database and the Gmail token (interactive OAuth cannot run here)
@@ -79,9 +91,10 @@ jobs:
           fi
 
       - name: Weekrapport (alleen op maandag)
+        # A failing report must not block the data commit below.
         run: |
           if [ "$(date -u +%u)" = "1" ]; then
-            pulse report --weekly
+            pulse report --weekly || echo "::warning::weekrapport faalde — data wordt alsnog gecommit."
           else
             echo "Geen maandag — weekrapport overgeslagen."
           fi
@@ -89,13 +102,14 @@ jobs:
       - name: Data terug-committen naar de repo
         # data/ and reports/ are gitignored for local use, hence `git add -f`:
         # in this workflow the repo itself is the persistent storage. The
-        # database contains customer feedback and the Gmail token lives in
-        # data/gmail/ — the repo MUST be private.
+        # database contains customer feedback — the repo MUST be private.
+        # data/gmail/ (OAuth token) is explicitly excluded from the commit.
         run: |
           git config user.name "pulse-bot"
           git config user.email "pulse-bot@users.noreply.github.com"
           mkdir -p data reports
           git add -f data/ reports/
+          git rm -r --cached --ignore-unmatch -q data/gmail || true
           if git diff --cached --quiet; then
             echo "Geen wijzigingen — niets te committen."
           else

@@ -103,11 +103,17 @@ def parse_csv(content: str) -> list[FeedbackItem]:
     Raises SourceError with a plain-language message when no usable text
     column exists; rows without text are skipped with a warning count.
     """
-    try:
-        dialect = csv.Sniffer().sniff(content[:2048], delimiters=",;\t")
-    except csv.Error:
-        dialect = csv.excel  # default comma
-    reader = csv.DictReader(io.StringIO(content), dialect=dialect)
+    # Pick the delimiter from the HEADER line, not from a data sample: a
+    # single-column file whose review texts contain commas would otherwise
+    # be sniffed as comma-separated and truncated at the first comma.
+    header_line = content.splitlines()[0] if content.strip() else ""
+    counts = {d: header_line.count(d) for d in (",", ";", "\t")}
+    delimiter = max(counts, key=counts.get)
+    if counts[delimiter] == 0:
+        # Single-column file: use a delimiter that cannot occur in text so
+        # every full line lands in the one column.
+        delimiter = "\x1f"
+    reader = csv.DictReader(io.StringIO(content), delimiter=delimiter)
     if not reader.fieldnames:
         raise SourceError("Leeg CSV-bestand — niets te importeren.")
 
@@ -195,17 +201,30 @@ def _row_to_item(row: dict[str, str]) -> FeedbackItem | None:
     date = _normalize_date(row.get("date", ""))
     author = row.get("author", "").strip() or None
     channel = row.get("channel", "").strip()
+    competitor = row.get("competitor", "").strip() or None
     return FeedbackItem(
-        external_id=content_hash(text, author, date),
+        external_id=content_hash(text, author, date, competitor),
         text=text,
         happened_at=date,
         author_display=author,
         author_ref=author,
         language=row.get("language", "").strip() or None,
-        url=row.get("url", "").strip() or None,
-        competitor_name=row.get("competitor", "").strip() or None,
+        url=_safe_url(row.get("url", "")),
+        competitor_name=competitor,
         raw={"import": "manual", "kanaal": channel or None},
     )
+
+
+def _safe_url(value: str) -> str | None:
+    """Only http(s) URLs survive an import. Anything else (javascript:,
+    data:, file:, plain text) is dropped: the dashboard renders this value
+    as a clickable link."""
+    value = value.strip()
+    if value.casefold().startswith(("http://", "https://")):
+        return value
+    if value:
+        logger.warning("URL zonder http(s) genegeerd bij import: %r", value[:80])
+    return None
 
 
 def _normalize_date(value: str) -> str | None:

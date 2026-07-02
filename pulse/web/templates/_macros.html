@@ -5,7 +5,7 @@
   {% if item['competitor_name'] %}
     <span class="chip chip-competitor">{{ item['competitor_name'] }}</span>
   {% endif %}
-  {% if item['health_flag'] or (item['analyzed_at'] is none and item['pre_health_flag']) %}
+  {% if item['health_flag'] or item['pre_health_flag'] %}
     <span class="chip chip-health">⚕ gezondheid</span>
   {% endif %}
   {% if item['urgency'] == 'urgent' and not item['health_flag'] %}
@@ -39,7 +39,7 @@
 {% endmacro %}
 
 {% macro item_card(item, next_url, show_follow_up=False) %}
-  <article class="item-card {{ 'is-health' if (item['health_flag'] or (item['analyzed_at'] is none and item['pre_health_flag'])) else '' }} {{ 'is-done' if item['followed_up_at'] else '' }}">
+  <article class="item-card {{ 'is-health' if (item['health_flag'] or item['pre_health_flag']) else '' }} {{ 'is-done' if item['followed_up_at'] else '' }}">
     <div class="item-meta">
       <span class="item-date">{{ (item['happened_at'] or item['first_seen']) | day }}</span>
       <span class="item-author">{{ item['author_display'] or 'anoniem' }}</span>

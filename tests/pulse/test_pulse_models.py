@@ -30,3 +30,11 @@ def test_content_hash_differs_per_author_and_date():
     base = content_hash("Werkt super!", "Els", "2026-06-01")
     assert content_hash("Werkt super!", "Ans", "2026-06-01") != base
     assert content_hash("Werkt super!", "Els", "2026-06-02") != base
+
+
+def test_content_hash_differs_per_competitor():
+    """Regression: the same short review about two brands is two items."""
+    a = content_hash("Slecht product!", None, "2026-06-01", competitor="Cloudpillo")
+    b = content_hash("Slecht product!", None, "2026-06-01", competitor="8hours")
+    assert a != b
+    assert content_hash("x", None, None) == content_hash("x", None, None, competitor=None)

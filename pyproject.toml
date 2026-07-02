@@ -20,7 +20,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest==9.1.1"]
-ai = ["anthropic>=0.40,<1.0"]
+ai = ["anthropic==0.115.1"]
 gmail = [
     "google-api-python-client==2.198.0",
     "google-auth-oauthlib==1.4.0",

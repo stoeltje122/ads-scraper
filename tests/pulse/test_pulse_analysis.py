@@ -184,3 +184,12 @@ def test_canned_analyzer_heuristic_fallback(pulse_seeded_db, pulse_settings):
         "WHERE i.external_id = 'nieuw'"
     ).fetchone()
     assert row["health_flag"] == 1 and row["urgency"] == "urgent"
+
+
+def test_health_flag_string_false_is_false():
+    """Regression: the model answering health_flag as the STRING 'false'
+    must not flip the flag to true."""
+    result = parse_analysis(_raw(health_flag="false"), SLUGS, False)
+    assert result.health_flag is False
+    result = parse_analysis(_raw(health_flag="true", urgency="low"), SLUGS, False)
+    assert result.health_flag is True and result.urgency == "urgent"

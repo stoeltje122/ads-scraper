@@ -88,7 +88,7 @@ class TrustpilotAdapter(SourceAdapter):
             [
                 VERIFIED_EXPLANATION,
                 "Reviews plak je in het dashboard (Import) of importeer je als CSV.",
-                "Komt er ooit een betaald plan met API-module, dan wordt deze "
-                "adapter afgebouwd — de plek staat klaar.",
+                "Komt er ooit een betaald plan met API-module, dan kan de koppeling "
+                "alsnog gebouwd worden — de plek in de code staat er klaar voor.",
             ],
         )

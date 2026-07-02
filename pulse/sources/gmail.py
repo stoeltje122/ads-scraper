@@ -47,9 +47,16 @@ _QUOTE_MARKERS = [
     re.compile(r"^Op .{4,80} schreef .{2,120}:\s*$"),
     re.compile(r"^On .{4,80} wrote:\s*$"),
     re.compile(r"^-{2,}\s*(Original Message|Oorspronkelijk bericht)\s*-{2,}", re.IGNORECASE),
-    re.compile(r"^(Van|From):\s.+", re.IGNORECASE),
     re.compile(r"^_{10,}\s*$"),
 ]
+
+# A bare "Van:/From:" line is only a quote header when the classic Outlook
+# header block follows (Verzonden/Aan/...). A customer writing "Van: de
+# webshop kreeg ik geen antwoord" must never cut off the rest of the mail.
+_FORWARD_HEADER_RE = re.compile(r"^(Van|From):\s.+", re.IGNORECASE)
+_FORWARD_FOLLOWUP_RE = re.compile(
+    r"^(Verzonden|Sent|Aan|To|Datum|Date|Onderwerp|Subject|Cc):\s", re.IGNORECASE
+)
 
 _SUBJECT_PREFIX_RE = re.compile(r"^\s*((re|fwd?|antw)\s*:\s*)+", re.IGNORECASE)
 
@@ -150,7 +157,10 @@ class GmailAdapter(SourceAdapter):
             external_id=msg["id"],
             text=f"{subject}\n\n{text}".strip() if subject else text,
             happened_at=happened_at,
-            author_display=display or (address.split("@")[0] if address else None),
+            # Dataminimalisatie: only an explicit display name is stored;
+            # falling back to the address' local part would leak an
+            # identifier we promised to keep hashed.
+            author_display=display or None,
             author_ref=address or None,
             url=f"https://mail.google.com/mail/u/0/#all/{msg['id']}",
             thread_external_id=msg.get("threadId"),
@@ -308,14 +318,25 @@ def _strip_html(html: str) -> str:
 
 def strip_quoted_reply(text: str) -> str:
     """Keep only the new content of a mail: cut at the first quote marker,
-    drop '>' quoted lines and everything after a signature separator."""
+    drop '>' quoted lines and everything after a signature separator.
+
+    Safety valve: if stripping leaves nothing (e.g. a fully-forwarded
+    complaint), the original text is returned — a customer's words are
+    never silently discarded."""
+    all_lines = text.splitlines()
     lines: list[str] = []
-    for line in text.splitlines():
-        if any(marker.match(line.strip()) for marker in _QUOTE_MARKERS):
+    for idx, line in enumerate(all_lines):
+        stripped_line = line.strip()
+        if any(marker.match(stripped_line) for marker in _QUOTE_MARKERS):
             break
-        if line.strip() == "--":
+        if _FORWARD_HEADER_RE.match(stripped_line) and any(
+            _FORWARD_FOLLOWUP_RE.match(nxt.strip()) for nxt in all_lines[idx + 1 : idx + 4]
+        ):
+            break
+        if stripped_line == "--":
             break
         if line.lstrip().startswith(">"):
             continue
         lines.append(line)
-    return "\n".join(lines).strip()
+    result = "\n".join(lines).strip()
+    return result if result else text.strip()

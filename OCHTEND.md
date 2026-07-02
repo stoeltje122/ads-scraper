@@ -1,7 +1,7 @@
 # Goedemorgen! ☀️ — Pulse staat klaar
 
 Vannacht is **Pulse** gebouwd: jullie feedback- en luistertool. Alles wat zonder
-wachtwoorden en sleutels kon, is af én getest (218 automatische tests, allemaal
+wachtwoorden en sleutels kon, is af én getest (234 automatische tests, allemaal
 groen). Dit bestand vertelt in gewone taal wat er staat, hoe je het nu meteen
 kunt zien werken, en welke stappen alleen jullie kunnen doen.
 
@@ -91,7 +91,7 @@ werkt intussen door).
 - Dashboard met 7 schermen, weekrapport (Markdown + HTML), export (CSV/JSON),
   `pulse forget` (AVG), retentie-opschoning, logging, en een `pulse status`
   die het hele systeem in één blik samenvat.
-- 218 automatische tests; `pulse demo` als altijd-werkende rooktest.
+- 234 automatische tests; `pulse demo` als altijd-werkende rooktest.
 
 ## Aannames die vannacht gemaakt zijn (met defaults uit de opdracht)
 
@@ -108,10 +108,12 @@ werkt intussen door).
    gezondheidsklacht over een ander merk: dat is een inzicht voor Kansen, geen
    supportcase van ons. (De AI markeert hem wel, dus hij is terugvindbaar via
    de Inbox-filter "gezondheid".)
-6. **Na AI-analyse telt het AI-oordeel**: een trefwoord-hit die volgens de
-   analyse tóch geen gezondheidssignaal is (bijv. "mijn hoofdpijn is juist
-   wég!") verdwijnt uit Urgent. Op de detailpagina blijft zichtbaar wélk
-   trefwoord de voormarkering veroorzaakte.
+6. **Het trefwoord-vangnet is heilig**: een melding met een gezondheids-
+   trefwoord blijft in Urgent staan tot een mens hem afvinkt — óók als de
+   AI oordeelt dat het geen gezondheidssignaal is (bijv. "mijn hoofdpijn is
+   juist wég!"). Trefwoord + AI-twijfel = twijfel, en bij twijfel kijken
+   jullie even zelf. Op de detailpagina staat wélk trefwoord de markering
+   veroorzaakte; afvinken kost één klik.
 7. **Handmatig geïmporteerde Trustpilot/bol-reviews** worden onder die kanalen
    geregistreerd (filters kloppen dus), ook al zijn die bronnen "gepauzeerd" —
    pauze gaat alleen over automatisch ophalen.
@@ -122,9 +124,10 @@ werkt intussen door).
    uitbreiding zodra jullie er waarde in zien; de plek in de code is er klaar
    voor (`pulse/sources/bol.py`).
 10. **GitHub Actions-workflow staat uit** tot jullie hem bewust aanzetten: die
-    route commit de database (met klantdata en het Gmail-token) naar de repo en
-    vereist dus een privérepo + eenmalige bootstrap. Cron/launchd lokaal is
-    simpeler en priver; de keuze is aan jullie.
+    route commit de database (met klantdata) naar de repo en vereist dus een
+    privérepo + eenmalige bootstrap; het Gmail-token gaat als geheim (secret),
+    nooit in git. Cron/launchd lokaal is simpeler en priver; de keuze is aan
+    jullie.
 
 ## Eerlijk overzicht: wat is er níet (af)
 

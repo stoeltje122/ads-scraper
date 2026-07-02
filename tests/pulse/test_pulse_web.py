@@ -125,3 +125,28 @@ def test_theme_add_duplicate_is_friendly(client):
         "/beheer/theme/add", data={"slug": "overig"}, follow_redirects=False
     )
     assert "bestaat al" in unquote(resp.headers["location"])
+
+
+def test_backslash_redirect_is_blocked(client):
+    resp = client.post(
+        "/item/1/opvolgen",
+        data={"done": "1", "next": "/\\evil.example"},
+        follow_redirects=False,
+    )
+    assert resp.headers["location"] == "/urgent"
+
+
+def test_javascript_url_never_rendered_as_link(client):
+    csv_bytes = (
+        "tekst,url\nkwaadaardige review,javascript:alert(1)\n"
+    ).encode("utf-8")
+    client.post("/import/csv", files={"bestand": ("x.csv", csv_bytes, "text/csv")})
+    # find the new item and open its detail page
+    from pulse.db import open_db
+    # the client fixture's settings db lives where the app reads it; find the item id via inbox search
+    page = client.get("/inbox", params={"q": "kwaadaardige"}).text
+    import re
+    m = re.search(r"/item/(\d+)", page)
+    assert m, "geimporteerd item niet gevonden in inbox"
+    detail = client.get(f"/item/{m.group(1)}").text
+    assert "javascript:" not in detail

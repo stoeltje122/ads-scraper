@@ -77,7 +77,7 @@ class ItemFilter:
             clauses.append("COALESCE(i.happened_at, i.first_seen) >= date('now', ?)")
             params.append(f"-{int(self.days)} days")
         if self.health_only:
-            clauses.append("(a.health_flag = 1 OR (a.item_id IS NULL AND i.pre_health_flag = 1))")
+            clauses.append("(a.health_flag = 1 OR i.pre_health_flag = 1)")
         if self.unanalyzed_only:
             clauses.append("a.item_id IS NULL")
         return (" WHERE " + " AND ".join(clauses)) if clauses else "", params
@@ -119,17 +119,20 @@ def thread_items(conn: sqlite3.Connection, thread_id: int) -> list[sqlite3.Row]:
 
 def urgent_items(conn: sqlite3.Connection, include_followed_up: bool = False) -> list[sqlite3.Row]:
     """Everything needing human eyes: analyzed urgent/health items, plus
-    keyword-pre-flagged items still waiting for analysis. Health first.
+    every keyword-pre-flagged item — also when the AI later disagreed. A
+    keyword hit + an AI 'not health' verdict is by definition doubt, and
+    doubt means a human looks at it once and ticks it off; a model error
+    may never silently hide a side-effect report. Health first.
     Competitor items are excluded on purpose — a side effect at another
     brand is a Kansen insight, not one of our support cases."""
     followed = "" if include_followed_up else "AND i.followed_up_at IS NULL"
     return conn.execute(
         _ITEM_SELECT
         + f"""WHERE (a.urgency = 'urgent' OR a.health_flag = 1
-                     OR (a.item_id IS NULL AND i.pre_health_flag = 1))
+                     OR i.pre_health_flag = 1)
               AND i.competitor_id IS NULL
               {followed}
-           ORDER BY COALESCE(a.health_flag, i.pre_health_flag) DESC,
+           ORDER BY MAX(COALESCE(a.health_flag, 0), i.pre_health_flag) DESC,
                     COALESCE(i.happened_at, i.first_seen) DESC"""
     ).fetchall()
 
@@ -138,7 +141,7 @@ def count_urgent_open(conn: sqlite3.Connection) -> int:
     return conn.execute(
         """SELECT COUNT(*) FROM items i LEFT JOIN analyses a ON a.item_id = i.id
            WHERE (a.urgency = 'urgent' OR a.health_flag = 1
-                  OR (a.item_id IS NULL AND i.pre_health_flag = 1))
+                  OR i.pre_health_flag = 1)
              AND i.competitor_id IS NULL
              AND i.followed_up_at IS NULL"""
     ).fetchone()[0]
@@ -221,10 +224,11 @@ def items_per_week(conn: sqlite3.Connection, weeks: int = 12) -> list[dict]:
 
 def week_over_week(conn: sqlite3.Connection, today: date | None = None) -> dict:
     """Top themes this week vs the 7 days before, for the Trends page and
-    the weekly report."""
+    the weekly report. Both windows are exactly 7 days ('this week' =
+    today-6 .. today inclusive), so the comparison is fair."""
     today = today or date.today()
-    this_start = (today - timedelta(days=7)).isoformat()
-    prev_start = (today - timedelta(days=14)).isoformat()
+    this_start = (today - timedelta(days=6)).isoformat()
+    prev_start = (today - timedelta(days=13)).isoformat()
     end = (today + timedelta(days=1)).isoformat()
 
     def by_type(type_: str, start: str, stop: str) -> list[dict]:

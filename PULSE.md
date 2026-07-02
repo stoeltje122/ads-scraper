@@ -65,6 +65,8 @@ cd ads-scraper
 python3 -m venv .venv                      # eenmalig (al gedaan als AdScout draait)
 source .venv/bin/activate                  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt -e .       # eenmalig
+cp .env.example .env                       # eenmalig: je instellingenbestand
+                                           # (voor de demo niet nodig, wel voor secties 4-6)
 
 pulse init      # database + bronnen + thema's + concurrentenlijst
 pulse demo      # voorbeelddata: mails, reacties, reviews, concurrent-reviews + analyse
@@ -107,7 +109,7 @@ Eenmalig, circa 15 minuten. Je hebt nodig: de Google-inlog van het `info@cloudpl
 2. Kies bij "Audience" voor **External** (tenzij jullie Google Workspace gebruiken; kies dan **Internal** en sla stap 5 over) en klik **Create**.
 3. App name: `Pulse`. Support-mail en developer-mail: `info@cloudplunge.com`. De rest mag leeg. **Save and continue** tot je er doorheen bent (scopes hoef je hier niet toe te voegen).
 4. Onder **Audience → Test users**: klik **Add users** en voeg `info@cloudplunge.com` toe. *(Dit is belangrijk: zonder dit weigert Google straks de inlog met "access_denied".)*
-5. De app blijft gewoon in "Testing"-modus staan — prima voor eigen gebruik. Google laat test-tokens van externe apps na 7 dagen verlopen **behalve** als je alleen de eigen mailbox gebruikt met de readonly-scope; merk je toch dat je wekelijks opnieuw moet inloggen, zet de app dan op "In production" (knop op dezelfde pagina; de waarschuwing over verificatie mag je voor eigen gebruik negeren).
+5. Zet de app daarna meteen op **"In production"** (knop op dezelfde pagina onder "Publishing status"): in "Testing"-modus laat Google de login elke 7 dagen verlopen en zou je wekelijks opnieuw moeten inloggen. Google toont dan een waarschuwing over app-verificatie — die is bedoeld voor apps met publiek, en mag je voor deze eigen interne app negeren (bij de login klik je straks op "Continue/Doorgaan").
 
 **Stap D — Credentials downloaden**
 1. **APIs & Services** → **Credentials** → **Create credentials** → **OAuth client ID**.
@@ -230,7 +232,7 @@ crontab -e
 30 7 * * * /pad/naar/ads-scraper/ops/pulse-cron.sh
 ```
 
-**GitHub Actions (geen eigen computer nodig)** — workflow staat in `.github/workflows/pulse-collect.yml`, standaard **uitgeschakeld**. Deze route vereist een **privérepo** (de database met klantfeedback en het Gmail-token worden naar de repo gecommit) en een eenmalige lokale bootstrap: Gmail koppelen, één `pulse collect`, en dan `git add -f data/ && git commit && git push`. Daarna de secrets `META_PAGE_TOKEN`, `PULSE_META_PAGE_ID` en (optioneel) `ANTHROPIC_API_KEY` zetten en de `schedule`-regels in het bestand ont-commentariëren — de volledige instructie staat in de kop van het workflow-bestand.
+**GitHub Actions (geen eigen computer nodig)** — workflow staat in `.github/workflows/pulse-collect.yml`, standaard **uitgeschakeld**. Deze route vereist een **privérepo** (de database met klantfeedback wordt naar de repo gecommit) en een eenmalige lokale bootstrap: Gmail koppelen, één `pulse collect`, en dan alleen de database committen (`git add -f data/pulse.db`). Het Gmail-token gaat níet in git maar als secret `GMAIL_TOKEN_JSON` (de inhoud van `data/gmail/token.json`), samen met `META_PAGE_TOKEN`, `PULSE_META_PAGE_ID` en optioneel `ANTHROPIC_API_KEY`. Daarna de `schedule`-regels ont-commentariëren — de volledige stap-voor-stap staat in de kop van het workflow-bestand.
 
 ## 10. Weekrapport en export
 
@@ -242,10 +244,10 @@ Rapporten worden nu alleen lokaal opgeslagen; er is een `Notifier`-interface (`p
 
 ## 11. Privacy in gewone taal (AVG)
 
-- **Alles staat lokaal** op onze eigen computer: de database (`data/pulse.db`), rapporten en logs. Er is geen cloud-dienst van derden waar de feedback heen gaat, met één uitzondering: bij `pulse analyze` gaat de **tekst van het feedback-item** naar de Claude API van Anthropic om geclassificeerd te worden. Er gaan geen namen van afzenders of e-mailadressen mee, alleen de tekst zelf.
+- **Alles staat lokaal** op onze eigen computer: de database (`data/pulse.db`), rapporten en logs. Er is geen cloud-dienst van derden waar de feedback heen gaat, met één uitzondering: bij `pulse analyze` gaat de **tekst van het feedback-item** naar de Claude API van Anthropic om geclassificeerd te worden. Pulse stuurt daarbij geen aparte naam-, adres- of e-mailvelden mee — maar let op: de tekst zélf kan natuurlijk een naam bevatten (bijv. een ondertekening onder een mail).
 - **Dataminimalisatie:** Pulse bewaart alleen wat nodig is voor feedbackanalyse: de tekst, datum, bron en een weergavenaam. Adresgegevens, betaalinformatie of bijlagen uit mails worden nooit opgeslagen.
 - **Afzenders worden gehasht:** het e-mailadres of profiel-ID wordt direct omgezet in een onherkenbare code (hash) en het kale adres wordt nergens als sleutel bewaard.
-- **Iemand vergeten:** `pulse forget naam@voorbeeld.nl` (of dashboard → Beheer → "Iemand vergeten") verwijdert álle items en analyses van die persoon, definitief. Vraagt iemand om verwijdering van zijn gegevens, dan is dit de knop.
+- **Iemand vergeten:** `pulse forget naam@voorbeeld.nl` (of dashboard → Beheer → "Iemand vergeten") verwijdert álle items, analyses en bijbehorende mail-conversaties van die persoon uit de database, definitief. Vraagt iemand om verwijdering van zijn gegevens, dan is dit de knop. Eén ding doet de knop niet: al eerder gegenereerde weekrapport-bestanden (in `reports/`) kunnen een citaat bevatten — verwijder in dat geval ook het betreffende bestand.
 - **Retentie:** items ouder dan 24 maanden (instelbaar onder Beheer) worden automatisch opgeschoond bij de dagelijkse run.
 - **Gmail is alleen-lezen:** Pulse kan niets versturen, beantwoorden of verwijderen in de mailbox.
 
@@ -270,7 +272,7 @@ Backup = kopie van de map `data/` (database + Gmail-tokens) en eventueel `report
 
 ## 14. Onderhoud en uitbreiden
 
-- **Dependencies veilig updaten.** Versies staan vastgepind in `requirements*.txt`. Updaten doe je bewust: één regel verhogen, `pip install -r requirements.txt`, daarna `python -m pytest` (218 tests, alles hoort groen te zijn) en `pulse demo` + `pulse web` als rooktest. Werkt iets niet: versie terugdraaien.
+- **Dependencies veilig updaten.** Versies staan vastgepind in `requirements*.txt`. Updaten doe je bewust: één regel verhogen, `pip install -r requirements.txt`, daarna de testsuite draaien (eenmalig `pip install -r requirements-dev.txt`, dan `python -m pytest` — alles hoort groen te zijn) en `pulse demo` + `pulse web` als rooktest. Werkt iets niet: versie terugdraaien.
 - **Database-migraties.** Schemawijzigingen gaan uitsluitend via nieuwe, genummerde bestanden in `pulse/migrations/` — nooit een bestaand migratiebestand aanpassen. Pulse voert nieuwe migraties automatisch en veilig uit bij de eerstvolgende start.
 - **Thema's aanpassen** (bijv. een nieuw terugkerend onderwerp): dashboard → Beheer → Thema's, of `pulse theme add`. De AI gebruikt het nieuwe thema vanaf de eerstvolgende analyse; code aanpassen is niet nodig.
 - **Bron aan/uit:** Beheer of `pulse source pause/resume/activate` — zonder code.
