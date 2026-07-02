@@ -352,7 +352,9 @@ Handmatig opzoeken in de Ad Library web-UI:
 5. Koppelen: `adscout page add "Merk" <page_id> --page-name "Naam"`.
 
 **Ontbrekende thumbnails / creatives**
-Media wordt gedownload zodra een ad voor het eerst gezien wordt; dat is bewust "best effort" (Meta's render-pagina verandert weleens, downloads kunnen falen). Het dashboard valt dan terug op de Ad Library-link. Alsnog proberen te downloaden voor ads zonder media: `adscout creatives backfill`. Let op: voor al lang gestopte ads kan de snapshot bij Meta zelf verlopen zijn — dan blijft alleen de Ad Library-link over.
+Media wordt gedownload zodra een ad voor het eerst gezien wordt; dat is bewust "best effort" (Meta's render-pagina verandert weleens, downloads kunnen falen). Het dashboard valt dan terug op de Ad Library-link. Alsnog proberen te downloaden voor ads zonder media: `adscout creatives backfill`.
+
+> **Stand van zaken juli 2026:** Meta levert de snapshot-pagina momenteel als lege JavaScript-schil zonder media-URL's in de broncode, waardoor de download voor álle ads niets oplevert. De officiële API geeft voor commerciële ads geen directe media-URL's, en interne endpoints naspelen doen we bewust niet (compliance-grens). Creatives bekijk je dus via de Ad Library-link op elke ad-kaart — alle overige functionaliteit (looptijd, copy, nieuw/gestopt, rapporten) werkt volledig. Tip: draai `adscout collect --skip-creatives` zolang dit zo is (scheelt tijd), en probeer af en toe `adscout creatives backfill` — als Meta het weer server-side rendert, werkt het vanzelf weer. Structureel alternatief: een gelicentieerde ad-intelligence-provider aansluiten via de `AdSource`-adapter.
 
 **"database is locked"**
 SQLite laat maar één schrijver tegelijk toe. Dit gebeurt vrijwel alleen als het dashboard openstaat terwijl `adscout collect` draait. Oplossing: dashboard sluiten (Ctrl+C) en het commando **gewoon opnieuw draaien**. Er gaat niets verloren.
