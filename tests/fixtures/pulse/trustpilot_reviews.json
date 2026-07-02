@@ -1,0 +1,54 @@
+{
+  "reviews": [
+    {
+      "id": "tp-own-001",
+      "stars": 5,
+      "title": "Eindelijk een middel dat écht werkt",
+      "text": "Na jaren wisselend slapen probeerde ik Cloudplunge. Binnen een week merkte ik verschil: sneller inslapen en niet meer om 4 uur wakker. Geen suf gevoel overdag, wat ik bij melatonine wél had.",
+      "author": "Els R.",
+      "date": "2026-06-26",
+      "language": "nl",
+      "url": "https://nl.trustpilot.com/review/cloudplunge.com"
+    },
+    {
+      "id": "tp-own-002",
+      "stars": 4,
+      "title": "Goed product, verzending kan sneller",
+      "text": "Het product zelf bevalt goed, ik slaap dieper. Wel duurde de levering vijf werkdagen, dat mag anno 2026 echt sneller.",
+      "author": "Margriet V.",
+      "date": "2026-06-22",
+      "language": "nl",
+      "url": "https://nl.trustpilot.com/review/cloudplunge.com"
+    },
+    {
+      "id": "tp-own-003",
+      "stars": 2,
+      "title": "Geen verschil gemerkt",
+      "text": "Drie weken trouw elke avond een capsule genomen maar ik merk eerlijk gezegd geen enkel verschil met daarvoor. Jammer van het geld.",
+      "author": "Sandra K.",
+      "date": "2026-06-19",
+      "language": "nl",
+      "url": "https://nl.trustpilot.com/review/cloudplunge.com"
+    },
+    {
+      "id": "tp-own-004",
+      "stars": 1,
+      "title": "Retourproces is een drama",
+      "text": "Product werkte voor mij niet en toen begon het pas echt: drie mails gestuurd over de geld-terug-garantie en pas na een week antwoord. Uiteindelijk wel netjes opgelost, maar dit moet beter.",
+      "author": "Chantal M.",
+      "date": "2026-06-15",
+      "language": "nl",
+      "url": "https://nl.trustpilot.com/review/cloudplunge.com"
+    },
+    {
+      "id": "tp-own-005",
+      "stars": 5,
+      "title": "Word uitgerust wakker",
+      "text": "Ik gebruik het nu een maand en word echt uitgerust wakker. Ook fijn dat het natuurlijk is. Abonnementskorting zou welkom zijn!",
+      "author": "Hanneke D.",
+      "date": "2026-06-29",
+      "language": "nl",
+      "url": "https://nl.trustpilot.com/review/cloudplunge.com"
+    }
+  ]
+}

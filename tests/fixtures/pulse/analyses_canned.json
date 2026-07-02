@@ -1,0 +1,468 @@
+{
+  "msg-health-01": {
+    "sentiment": "negative",
+    "type": "complaint",
+    "urgency": "urgent",
+    "health_flag": true,
+    "themes": [
+      "bijwerking-gezondheid"
+    ],
+    "language": "nl",
+    "confidence": 0.97,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "msg-mel-01": {
+    "sentiment": "neutral",
+    "type": "question",
+    "urgency": "normal",
+    "health_flag": false,
+    "themes": [
+      "ingredientvraag"
+    ],
+    "language": "nl",
+    "confidence": 0.95,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "msg-lev-01": {
+    "sentiment": "negative",
+    "type": "complaint",
+    "urgency": "normal",
+    "health_flag": false,
+    "themes": [
+      "levering-verzending"
+    ],
+    "language": "nl",
+    "confidence": 0.94,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "msg-lev-02": {
+    "sentiment": "negative",
+    "type": "complaint",
+    "urgency": "urgent",
+    "health_flag": false,
+    "themes": [
+      "levering-verzending",
+      "retour-geldterug"
+    ],
+    "language": "nl",
+    "confidence": 0.92,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "msg-comp-01": {
+    "sentiment": "positive",
+    "type": "compliment",
+    "urgency": "low",
+    "health_flag": false,
+    "themes": [
+      "werking-inslapen"
+    ],
+    "language": "nl",
+    "confidence": 0.97,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "msg-dos-01": {
+    "sentiment": "neutral",
+    "type": "question",
+    "urgency": "normal",
+    "health_flag": false,
+    "themes": [
+      "gebruik-dosering"
+    ],
+    "language": "nl",
+    "confidence": 0.96,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "msg-med-01": {
+    "sentiment": "neutral",
+    "type": "question",
+    "urgency": "urgent",
+    "health_flag": true,
+    "themes": [
+      "bijwerking-gezondheid",
+      "ingredientvraag"
+    ],
+    "language": "nl",
+    "confidence": 0.93,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "msg-retour-01": {
+    "sentiment": "neutral",
+    "type": "question",
+    "urgency": "normal",
+    "health_flag": false,
+    "themes": [
+      "retour-geldterug"
+    ],
+    "language": "nl",
+    "confidence": 0.95,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "msg-html-01": {
+    "sentiment": "negative",
+    "type": "suggestion",
+    "urgency": "low",
+    "health_flag": false,
+    "themes": [
+      "product-capsule-smaak-verpakking"
+    ],
+    "language": "nl",
+    "confidence": 0.9,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "msg-quote-01": {
+    "sentiment": "positive",
+    "type": "question",
+    "urgency": "normal",
+    "health_flag": false,
+    "themes": [
+      "prijs-korting"
+    ],
+    "language": "nl",
+    "confidence": 0.88,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "875301_101": {
+    "sentiment": "neutral",
+    "type": "question",
+    "urgency": "normal",
+    "health_flag": false,
+    "themes": [
+      "ingredientvraag"
+    ],
+    "language": "nl",
+    "confidence": 0.95,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "875301_102": {
+    "sentiment": "positive",
+    "type": "compliment",
+    "urgency": "low",
+    "health_flag": false,
+    "themes": [
+      "werking-doorslapen"
+    ],
+    "language": "nl",
+    "confidence": 0.96,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "875301_103": {
+    "sentiment": "neutral",
+    "type": "question",
+    "urgency": "normal",
+    "health_flag": false,
+    "themes": [
+      "prijs-korting"
+    ],
+    "language": "nl",
+    "confidence": 0.93,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "875301_105": {
+    "sentiment": "negative",
+    "type": "complaint",
+    "urgency": "urgent",
+    "health_flag": true,
+    "themes": [
+      "bijwerking-gezondheid",
+      "werking-herstel"
+    ],
+    "language": "nl",
+    "confidence": 0.85,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "881442_201": {
+    "sentiment": "negative",
+    "type": "complaint",
+    "urgency": "normal",
+    "health_flag": false,
+    "themes": [
+      "levering-verzending",
+      "klantenservice-ervaring"
+    ],
+    "language": "nl",
+    "confidence": 0.94,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "881442_202": {
+    "sentiment": "neutral",
+    "type": "question",
+    "urgency": "urgent",
+    "health_flag": true,
+    "themes": [
+      "bijwerking-gezondheid",
+      "ingredientvraag"
+    ],
+    "language": "nl",
+    "confidence": 0.96,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "881442_203": {
+    "sentiment": "neutral",
+    "type": "review",
+    "urgency": "low",
+    "health_flag": false,
+    "themes": [
+      "overig"
+    ],
+    "language": "nl",
+    "confidence": 0.7,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "tp-own-001": {
+    "sentiment": "positive",
+    "type": "review",
+    "urgency": "low",
+    "health_flag": false,
+    "themes": [
+      "werking-inslapen",
+      "werking-doorslapen"
+    ],
+    "language": "nl",
+    "confidence": 0.96,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "tp-own-002": {
+    "sentiment": "positive",
+    "type": "review",
+    "urgency": "normal",
+    "health_flag": false,
+    "themes": [
+      "werking-doorslapen",
+      "levering-verzending"
+    ],
+    "language": "nl",
+    "confidence": 0.92,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "tp-own-003": {
+    "sentiment": "negative",
+    "type": "review",
+    "urgency": "normal",
+    "health_flag": false,
+    "themes": [
+      "geen-effect"
+    ],
+    "language": "nl",
+    "confidence": 0.95,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "tp-own-004": {
+    "sentiment": "negative",
+    "type": "review",
+    "urgency": "normal",
+    "health_flag": false,
+    "themes": [
+      "retour-geldterug",
+      "klantenservice-ervaring"
+    ],
+    "language": "nl",
+    "confidence": 0.94,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "tp-own-005": {
+    "sentiment": "positive",
+    "type": "review",
+    "urgency": "low",
+    "health_flag": false,
+    "themes": [
+      "werking-herstel",
+      "prijs-korting"
+    ],
+    "language": "nl",
+    "confidence": 0.93,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "bol-own-001": {
+    "sentiment": "positive",
+    "type": "review",
+    "urgency": "low",
+    "health_flag": false,
+    "themes": [
+      "werking-inslapen",
+      "product-capsule-smaak-verpakking"
+    ],
+    "language": "nl",
+    "confidence": 0.95,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "bol-own-002": {
+    "sentiment": "neutral",
+    "type": "review",
+    "urgency": "normal",
+    "health_flag": false,
+    "themes": [
+      "prijs-korting"
+    ],
+    "language": "nl",
+    "confidence": 0.93,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "bol-own-003": {
+    "sentiment": "negative",
+    "type": "review",
+    "urgency": "urgent",
+    "health_flag": true,
+    "themes": [
+      "bijwerking-gezondheid"
+    ],
+    "language": "nl",
+    "confidence": 0.92,
+    "competitor_pro": null,
+    "competitor_con": null
+  },
+  "d52043f50d9b1c5286a014b71a71a307aed887dc415a0d13887a543e68a966e7": {
+    "sentiment": "negative",
+    "type": "review",
+    "urgency": "normal",
+    "health_flag": false,
+    "themes": [
+      "product-capsule-smaak-verpakking"
+    ],
+    "language": "nl",
+    "confidence": 0.93,
+    "competitor_pro": null,
+    "competitor_con": "kussen zakt na twee maanden in, kwaliteit valt tegen"
+  },
+  "7c7361f2eae98e6eb9affed4a86bfa6c666cb362a06f7ae5b1b3cf3827750760": {
+    "sentiment": "positive",
+    "type": "review",
+    "urgency": "low",
+    "health_flag": false,
+    "themes": [
+      "levering-verzending"
+    ],
+    "language": "nl",
+    "confidence": 0.92,
+    "competitor_pro": "volgende dag geleverd, slaapt lekker",
+    "competitor_con": null
+  },
+  "fd3a247bd49e809c300d760d76d681b2c44d350c404ddb872bd87aa6dc2308bc": {
+    "sentiment": "negative",
+    "type": "review",
+    "urgency": "normal",
+    "health_flag": false,
+    "themes": [
+      "retour-geldterug",
+      "klantenservice-ervaring"
+    ],
+    "language": "nl",
+    "confidence": 0.94,
+    "competitor_pro": null,
+    "competitor_con": "retourneren duurde drie weken en vele mails"
+  },
+  "674dfcb3367b71ca56687584a2b147fc0b4e8509037f1abc1dc38f2670fb814d": {
+    "sentiment": "negative",
+    "type": "review",
+    "urgency": "normal",
+    "health_flag": false,
+    "themes": [
+      "geen-effect"
+    ],
+    "language": "nl",
+    "confidence": 0.95,
+    "competitor_pro": null,
+    "competitor_con": "geen enkel effect gemerkt na een maand"
+  },
+  "ed3b0c24af98bdf78a1381a5626b12e78e0e0166f89260854a7674a99c86ef79": {
+    "sentiment": "negative",
+    "type": "review",
+    "urgency": "normal",
+    "health_flag": false,
+    "themes": [
+      "geen-effect"
+    ],
+    "language": "nl",
+    "confidence": 0.9,
+    "competitor_pro": null,
+    "competitor_con": "effect viel na de eerste week volledig weg"
+  },
+  "a23948a9434d55d8500d65420e36a1de768e68e9fb003623a5949e995628aec1": {
+    "sentiment": "negative",
+    "type": "review",
+    "urgency": "normal",
+    "health_flag": false,
+    "themes": [
+      "prijs-korting"
+    ],
+    "language": "nl",
+    "confidence": 0.93,
+    "competitor_pro": null,
+    "competitor_con": "veel te duur vergeleken met de drogist"
+  },
+  "348737060425567653cc0b0d9ce460467c865402f11d21a0d7caba840cb1592e": {
+    "sentiment": "positive",
+    "type": "review",
+    "urgency": "low",
+    "health_flag": false,
+    "themes": [
+      "product-capsule-smaak-verpakking"
+    ],
+    "language": "nl",
+    "confidence": 0.94,
+    "competitor_pro": "mooie stof en merkbare kwaliteit",
+    "competitor_con": null
+  },
+  "1085af2587ddf733214bb84a6b9a3abff0bc5e3c111e2ced57825357c3e874ed": {
+    "sentiment": "neutral",
+    "type": "review",
+    "urgency": "normal",
+    "health_flag": false,
+    "themes": [
+      "levering-verzending"
+    ],
+    "language": "nl",
+    "confidence": 0.91,
+    "competitor_pro": "product zelf is prima",
+    "competitor_con": "levering duurde tien dagen zonder updates"
+  },
+  "1103ca1f56d47386c255aa36b4c7b3340930d3576889b56ca714909e04558504": {
+    "sentiment": "negative",
+    "type": "review",
+    "urgency": "normal",
+    "health_flag": true,
+    "themes": [
+      "bijwerking-gezondheid"
+    ],
+    "language": "nl",
+    "confidence": 0.9,
+    "competitor_pro": null,
+    "competitor_con": "klant kreeg buikpijn en stopte na drie dagen"
+  },
+  "ae4244bc620c2cb93dabb52fecad82f7d00f6cc4647f44b48703f3213d0999ad": {
+    "sentiment": "negative",
+    "type": "review",
+    "urgency": "normal",
+    "health_flag": false,
+    "themes": [
+      "klantenservice-ervaring"
+    ],
+    "language": "nl",
+    "confidence": 0.94,
+    "competitor_pro": null,
+    "competitor_con": "klantenservice reageert niet op mail of Instagram"
+  }
+}
