@@ -16,8 +16,8 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 import httpx
 
 from adscout.config import ADS_ARCHIVE_FIELDS, Settings
-from adscout.models import AdRecord, AdTextVariant, PageCandidate, aggregate_candidates
-from adscout.sources.base import AdSource, AdSourceError, TokenError
+from adscout.models import AdRecord, AdTextVariant, PageCandidate, aggregate_candidates, utc_today
+from adscout.sources.base import AdSource, AdSourceError, PartialFetchError, TokenError
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +26,12 @@ MAX_PAGE_IDS_PER_CALL = 10  # documented API maximum for search_page_ids
 MAX_RETRIES = 5
 BACKOFF_BASE_SECONDS = 5
 USAGE_SOFT_LIMIT = 80  # % of app quota; above this we pause between calls
+
+# Meta's /ads_archive errors out (code 1) on deep pagination of large result
+# sets. INACTIVE history is therefore fetched in delivery-date windows, so
+# no single pagination ever goes deep. ACTIVE sets are small enough as-is.
+INACTIVE_WINDOW_MONTHS = 6
+DELIVERY_DATE_FLOOR = "2020-01-01"
 
 # Meta Graph API error codes
 ERROR_TOKEN = 190
@@ -56,12 +62,68 @@ class MetaAdLibraryAPI(AdSource):
         country: str,
         active_status: str = "ALL",
     ) -> Iterator[AdRecord]:
+        if active_status == "INACTIVE":
+            yield from self._fetch_inactive_windowed(page_ids, country)
+            return
         # search_page_ids accepts up to 10 IDs per call → chunk.
         for i in range(0, len(page_ids), MAX_PAGE_IDS_PER_CALL):
             chunk = page_ids[i : i + MAX_PAGE_IDS_PER_CALL]
             params = self._base_params(country, active_status)
             params["search_page_ids"] = json.dumps(chunk)
             yield from (parse_ad(item) for item in self._paginate(params))
+
+    def _fetch_inactive_windowed(
+        self, page_ids: list[str], country: str
+    ) -> Iterator[AdRecord]:
+        """Fetch INACTIVE ads in delivery-date windows (deep-pagination guard).
+
+        A window that still fails (too many ads → deep-pagination error) is
+        split in half and retried, down to windows of ~2 weeks. Long-running
+        ads can match several windows; the collector's upsert deduplicates.
+        Unrecoverable windows are reported via PartialFetchError *after*
+        everything fetchable was yielded.
+        """
+        from datetime import date, timedelta
+
+        failed: list[str] = []
+        for i in range(0, len(page_ids), MAX_PAGE_IDS_PER_CALL):
+            chunk = page_ids[i : i + MAX_PAGE_IDS_PER_CALL]
+            # worklist of (min, max) day strings; failing windows get split
+            todo = list(reversed(_date_windows(DELIVERY_DATE_FLOOR, utc_today().isoformat())))
+            while todo:
+                win_min, win_max = todo.pop()
+                params = self._base_params(country, "INACTIVE")
+                params["search_page_ids"] = json.dumps(chunk)
+                params["ad_delivery_date_min"] = win_min
+                params["ad_delivery_date_max"] = win_max
+                try:
+                    yield from (parse_ad(item) for item in self._paginate(params))
+                except TokenError:
+                    raise
+                except AdSourceError as exc:
+                    lo, hi = date.fromisoformat(win_min), date.fromisoformat(win_max)
+                    span = (hi - lo).days
+                    # Split down to ~5-day windows: ad-heavy launch weeks can
+                    # exceed the pagination wall even within two weeks.
+                    if span >= 10:
+                        mid = lo + timedelta(days=span // 2)
+                        todo.append(((mid + timedelta(days=1)).isoformat(), win_max))
+                        todo.append((win_min, mid.isoformat()))
+                        logger.info(
+                            "Historie-venster %s..%s te groot — gesplitst en opnieuw",
+                            win_min, win_max,
+                        )
+                    else:
+                        failed.append(win_min)
+                        logger.warning(
+                            "Historie-venster %s..%s (%s) faalde definitief: %s — ga door",
+                            win_min, win_max, country, exc,
+                        )
+        if failed:
+            raise PartialFetchError(
+                f"{len(failed)} historie-venster(s) bleven falen "
+                f"(o.a. rond {failed[0]}); actieve ads zijn wel compleet"
+            )
 
     def search_pages(self, brand_name: str, country: str) -> list[PageCandidate]:
         """Aggregate distinct advertising pages from a search_terms query.
@@ -156,6 +218,22 @@ class MetaAdLibraryAPI(AdSource):
             pause = 60 if worst >= 95 else 20
             logger.warning("App usage op %d%% — pauzeer %ds", worst, pause)
             time.sleep(pause)
+
+
+def _date_windows(start_day: str, end_day: str) -> list[tuple[str, str]]:
+    """Consecutive windows of INACTIVE_WINDOW_MONTHS from start to end day."""
+    from datetime import date, timedelta
+
+    windows: list[tuple[str, str]] = []
+    cursor = date.fromisoformat(start_day)
+    end = date.fromisoformat(end_day)
+    while cursor <= end:
+        year = cursor.year + (cursor.month - 1 + INACTIVE_WINDOW_MONTHS) // 12
+        month = (cursor.month - 1 + INACTIVE_WINDOW_MONTHS) % 12 + 1
+        nxt = date(year, month, 1)
+        windows.append((cursor.isoformat(), min(nxt - timedelta(days=1), end).isoformat()))
+        cursor = nxt
+    return windows
 
 
 def check_token(settings: Settings) -> tuple[bool, str]:

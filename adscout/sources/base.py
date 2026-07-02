@@ -16,6 +16,15 @@ class TokenError(AdSourceError):
     """Access token expired or invalid (Meta error 190). Needs human action."""
 
 
+class PartialFetchError(AdSourceError):
+    """The fetch yielded results but part of the (historic) set failed.
+
+    Raised at the END of iteration, after everything fetchable was yielded.
+    The collector treats this as a warning for inactive-history passes: the
+    active picture stays trustworthy, only old history is incomplete.
+    """
+
+
 class AdSource(ABC):
     @abstractmethod
     def fetch_ads(

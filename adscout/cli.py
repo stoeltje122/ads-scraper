@@ -140,6 +140,7 @@ def collect(
     fixture_dir: Path = typer.Option(DEFAULT_FIXTURE_DIR, help="Map met fixture-JSON."),
     skip_creatives: bool = typer.Option(False, help="Geen media downloaden deze run."),
     run_date: str = typer.Option(None, help="Overschrijf de run-datum (YYYY-MM-DD, voor tests)."),
+    only: str = typer.Option(None, help="Alleen dit merk collecten (bijv. na een tijdelijke API-fout)."),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """De dagelijkse run: ads ophalen, snapshotten, veranderingen detecteren."""
@@ -175,7 +176,10 @@ def collect(
         raise typer.Exit(2)
 
     day = date.fromisoformat(run_date) if run_date else None
-    result = collector.collect(conn, src, run_date=day)
+    result = collector.collect(conn, src, run_date=day, only=only)
+    if only and not result.per_advertiser:
+        typer.secho(f'Geen actieve concurrent "{only}" gevonden — zie: adscout advertiser list', fg="red")
+        raise typer.Exit(1)
 
     if not skip_creatives and source != "fixture" and result.new_ad_ids:
         typer.echo(f"Creatives downloaden voor {len(result.new_ad_ids)} nieuwe ads…")

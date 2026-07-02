@@ -32,10 +32,19 @@ class FixtureAdSource(AdSource):
         country: str,
         active_status: str = "ALL",
     ) -> Iterator[AdRecord]:
+        from adscout.models import utc_today
+
         wanted = {str(p) for p in page_ids}
+        today = utc_today()
         for item in self._load_all():
-            if str(item.get("page_id")) in wanted:
-                yield parse_ad(item)
+            if str(item.get("page_id")) not in wanted:
+                continue
+            record = parse_ad(item)
+            if active_status == "ACTIVE" and not record.is_active(today):
+                continue
+            if active_status == "INACTIVE" and record.is_active(today):
+                continue
+            yield record
 
     def search_pages(self, brand_name: str, country: str) -> list[PageCandidate]:
         needle = brand_name.lower()

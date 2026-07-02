@@ -68,14 +68,22 @@ def collect(
     conn: sqlite3.Connection,
     source: AdSource,
     run_date: date | None = None,
+    only: str | None = None,
 ) -> RunResult:
-    """Run one collect pass over all active advertisers."""
+    """Run one collect pass over all active advertisers.
+
+    `only` limits the run to one advertiser (by name, case-insensitive) —
+    handy to retry a single brand after a transient API failure without
+    re-fetching everything.
+    """
     run_date = run_date or utc_today()
     result = RunResult(started_at=datetime.now(timezone.utc).isoformat(timespec="seconds"))
 
     advertisers = conn.execute(
         "SELECT * FROM advertisers WHERE status = 'active' ORDER BY name"
     ).fetchall()
+    if only:
+        advertisers = [a for a in advertisers if a["name"].lower() == only.lower()]
 
     for adv in advertisers:
         adv_result = AdvertiserResult(advertiser=adv["name"])
@@ -95,19 +103,37 @@ def collect(
         countries = [c.strip().upper() for c in (adv["countries"] or "NL").split(",") if c.strip()]
         seen_ids: set[str] = set()
         fetch_complete = True
+
+        def process(country: str, active_status: str) -> None:
+            for record in source.fetch_ads(pages, country, active_status=active_status):
+                if not record.ad_archive_id:
+                    continue
+                is_new, just_stopped = upsert_ad(conn, adv["id"], record, country, run_date)
+                if record.ad_archive_id not in seen_ids:
+                    seen_ids.add(record.ad_archive_id)
+                    adv_result.ads_fetched += 1
+                    adv_result.new_ads += 1 if is_new else 0
+                    adv_result.stopped_ads += 1 if just_stopped else 0
+                    if is_new:
+                        result.new_ad_ids.append(record.ad_archive_id)
+
         try:
+            # Pass 1 — ACTIVE ads. Small set, must be complete: this is what
+            # vanish detection and the "active now" picture rely on.
             for country in countries:
-                for record in source.fetch_ads(pages, country, active_status="ALL"):
-                    if not record.ad_archive_id:
-                        continue
-                    is_new, just_stopped = upsert_ad(conn, adv["id"], record, country, run_date)
-                    if record.ad_archive_id not in seen_ids:
-                        seen_ids.add(record.ad_archive_id)
-                        adv_result.ads_fetched += 1
-                        adv_result.new_ads += 1 if is_new else 0
-                        adv_result.stopped_ads += 1 if just_stopped else 0
-                        if is_new:
-                            result.new_ad_ids.append(record.ad_archive_id)
+                process(country, "ACTIVE")
+            # Pass 2 — INACTIVE history (date-windowed in the Meta source to
+            # dodge deep-pagination failures). A failure here only means old
+            # history is incomplete; the active picture stays trustworthy,
+            # so it is a warning instead of an advertiser error.
+            for country in countries:
+                try:
+                    process(country, "INACTIVE")
+                except TokenError:
+                    raise
+                except AdSourceError as exc:
+                    _add_warning(adv_result, f"historie deels niet opgehaald: {exc}")
+                    logger.warning("%s (%s): %s", adv["name"], country, exc)
             conn.commit()
         except TokenError as exc:
             # A broken token affects every advertiser: stop fetching, but do
@@ -140,15 +166,20 @@ def collect(
             # Persist this as a warning: a stale/removed page looks exactly
             # like this, and it must be visible in `adscout status`, not
             # only in the log file.
-            adv_result.warning = (
+            _add_warning(
+                adv_result,
                 "0 ads teruggekregen — vanish-detectie overgeslagen. Blijft dit "
-                "zo, controleer dan of de page_id nog klopt (adscout resolve)."
+                "zo, controleer dan of de page_id nog klopt (adscout resolve).",
             )
             logger.warning("%s: %s", adv["name"], adv_result.warning)
 
     result.finished_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     result.run_id = record_run(conn, result)
     return result
+
+
+def _add_warning(adv_result: AdvertiserResult, message: str) -> None:
+    adv_result.warning = f"{adv_result.warning}; {message}" if adv_result.warning else message
 
 
 def upsert_ad(
