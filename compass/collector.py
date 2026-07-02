@@ -257,6 +257,9 @@ def collect(
                 touch(record.order_day)
 
         _fetch_guarded(source_result, fetch_orders)
+        # Commit per source (AdScout discipline): a killed process during a
+        # long backfill keeps every source that already finished.
+        conn.commit()
 
     for source in spend_sources:
         source_result = SourceResult(name=source.name, category="spend")
@@ -270,6 +273,7 @@ def collect(
                 touch(record.day)
 
         _fetch_guarded(source_result, fetch_spend)
+        conn.commit()
 
     for source in inventory_sources:
         source_result = SourceResult(name=source.name, category="inventory")
@@ -283,9 +287,12 @@ def collect(
                 source_result.upserted = 1
 
         _fetch_guarded(source_result, fetch_inventory)
+        conn.commit()
 
     rebuild_start = min(since, earliest_day) if earliest_day else since
     try:
+        # Atomic inside (rolls itself back on failure); the per-source
+        # commits above mean a rollback can never take fetched data along.
         store.rebuild_daily_metrics(conn, rebuild_start, today)
     except Exception as exc:  # data is stored; the rollup can be rebuilt later
         result.run_errors.append(f"dagcijfers herbouwen mislukt: {exc}")

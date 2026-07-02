@@ -96,6 +96,11 @@ def _optional_int(row: dict[str, str], column: str) -> int | None:
         raise ValueError(f"{column} is geen geheel getal: {text!r}") from None
 
 
+def _units_or_default(row: dict[str, str]) -> int:
+    units = _optional_int(row, "units")
+    return 1 if units is None else units
+
+
 def _day(row: dict[str, str], column: str = "day") -> date:
     text = _required_text(row, column)
     try:
@@ -147,7 +152,9 @@ def _order_record(row: dict[str, str]) -> OrderRecord:
         channel=channel,
         ordered_at=_ordered_at(row),
         gross_cents=gross,
-        units=_optional_int(row, "units") or 1,
+        # `or 1` would silently turn an explicit units=0 into 1 and charge
+        # phantom COGS; only a MISSING value defaults to one unit.
+        units=_units_or_default(row),
         customer_hash=customer_hash(row.get("customer_ref") or None),
         payment_method=payment,
         status=status,
@@ -279,8 +286,8 @@ def import_file(
                         upserted += 1
                     touch(record.day)
                 else:
-                    store.upsert_inventory(conn, _inventory_record(row))
-                    upserted += 1
+                    if store.upsert_inventory(conn, _inventory_record(row)):
+                        upserted += 1
             except Exception as exc:  # soft: one bad row never aborts the file
                 add_error(f"regel {line}: {exc}")
 

@@ -317,18 +317,21 @@ def test_kostenmodel_post_with_garbage_redirects_softly(client, seeded_settings)
 
 
 def test_drempels_post_persists_and_feeds_get_thresholds(client, seeded_settings):
+    # '2.500' is Dutch for 2500 (cents): the thousands dot must not be
+    # read as a decimal point, or the €25 spend floor becomes 2 cents.
     resp = client.post(
         "/instellingen/drempels",
-        data={"mer_scale_factor": "1,4", "min_spend_cents": "3000"},
+        data={"mer_scale_factor": "1,4", "min_spend_cents": "2.500"},
         follow_redirects=False,
     )
     assert resp.status_code == 303
     conn = read_db(seeded_settings)
-    assert queries.get_setting(conn, "signal.mer_scale_factor") == "1,4"
+    # Stored normalized, so the raw form quirk never leaks further.
+    assert queries.get_setting(conn, "signal.mer_scale_factor") == "1.4"
     thresholds = signals.get_thresholds(conn)
     conn.close()
     assert thresholds["mer_scale_factor"] == pytest.approx(1.4)
-    assert thresholds["min_spend_cents"] == 3000
+    assert thresholds["min_spend_cents"] == 2500
     assert 'value="1,4"' in client.get("/instellingen").text
 
 

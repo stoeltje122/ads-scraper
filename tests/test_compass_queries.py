@@ -154,10 +154,10 @@ def test_cost_model_for_picks_the_version_valid_on_the_day(compass_db):
     assert queries.cost_model_for(compass_db, date(2026, 1, 1)).note == "v1"
 
 
-def test_current_cost_model_and_history_newest_first(compass_db):
+def test_cost_model_history_newest_first(compass_db):
     store.add_cost_model(compass_db, model())
     store.add_cost_model(compass_db, model(valid_from=date(2026, 6, 15), note="v2"))
-    assert queries.current_cost_model(compass_db, RUN_DAY).note == "v2"
+    assert queries.cost_model_for(compass_db, RUN_DAY).note == "v2"
     assert [m.note for m in queries.cost_model_history(compass_db)] == ["v2", "v1"]
 
 
@@ -482,7 +482,6 @@ def test_channel_totals_bol_pays_commission_and_empty_channel_is_none(compass_db
 
 def test_data_bounds_span_orders_and_spend_days(compass_db):
     assert queries.data_bounds(compass_db) is None
-    assert queries.orders_exist(compass_db) is False
 
     store.upsert_order(compass_db, order("s1", date(2026, 6, 10)))
     store.upsert_ad_spend(compass_db, spend(date(2026, 6, 5)))
@@ -490,4 +489,3 @@ def test_data_bounds_span_orders_and_spend_days(compass_db):
     compass_db.commit()
 
     assert queries.data_bounds(compass_db) == (date(2026, 6, 5), date(2026, 6, 12))
-    assert queries.orders_exist(compass_db) is True

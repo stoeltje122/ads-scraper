@@ -11,8 +11,10 @@ on:
   workflow_dispatch: {}
 
 # Never run two collects at the same time (SQLite + git push races).
+# Één groep voor beide tools: ze committen allebei data/ + reports/ naar
+# dezelfde branch, dus twee tegelijk lopende runs zouden push-racen.
 concurrency:
-  group: adscout-collect
+  group: cloudplunge-collect
   cancel-in-progress: false
 
 permissions:

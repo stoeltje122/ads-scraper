@@ -270,6 +270,13 @@ def reorder_point_units(daily_sales: float, lead_time_days: int, safety_factor: 
     return max(daily_sales, 0.0) * max(lead_time_days, 0) * max(safety_factor, 0.0)
 
 
+def reorder_threshold_days(lead_time_days: int, safety_factor: float) -> float:
+    """The reorder point expressed in days of stock: levertijd ×
+    veiligheidsfactor. One definition for the signal rule, the voorraad
+    page and the weekly report, so their verdicts can never disagree."""
+    return max(lead_time_days, 0) * max(safety_factor, 0.0)
+
+
 def sellout_day(on_day: date, days_left: float | None) -> date | None:
     """The expected day stock runs out, whole days (floor: the day the
     last unit sells, not the day after)."""

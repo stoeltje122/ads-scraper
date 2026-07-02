@@ -115,15 +115,21 @@ def upsert_ad_spend(conn: sqlite3.Connection, rec: AdSpendRecord) -> bool:
 # ── inventory ────────────────────────────────────────────────────────
 
 
-def upsert_inventory(conn: sqlite3.Connection, rec: InventoryRecord) -> None:
+def upsert_inventory(conn: sqlite3.Connection, rec: InventoryRecord) -> bool:
     """Latest count wins per (day, source): a later fetch on the same day
-    is fresher truth, not a duplicate."""
+    is fresher truth, not a duplicate. Returns True when the row is new,
+    like the other upserts, so import counts stay honest."""
+    existing = conn.execute(
+        "SELECT 1 FROM inventory_snapshots WHERE day = ? AND source = ?",
+        (rec.day.isoformat(), rec.source),
+    ).fetchone()
     conn.execute(
         """INSERT INTO inventory_snapshots (day, units, source)
            VALUES (?, ?, ?)
            ON CONFLICT(day, source) DO UPDATE SET units = excluded.units""",
         (rec.day.isoformat(), rec.units, rec.source),
     )
+    return existing is None
 
 
 def set_manual_inventory(conn: sqlite3.Connection, day: date, units: int) -> None:
@@ -299,18 +305,47 @@ def rebuild_daily_metrics(conn: sqlite3.Connection, start: date, end: date) -> N
         )
     }
 
+    # The delete + per-day inserts below commit together or roll back
+    # together: a crash halfway must never leave a hole in the rollup.
+    # Callers therefore commit their own pending writes BEFORE calling
+    # (the collector and importer do), or lose them with the rollback.
+    try:
+        _rebuild_range(conn, start, end, new_customer_days)
+    except BaseException:
+        conn.rollback()
+        raise
+    conn.commit()
+    logger.info("Dagcijfers herbouwd: %s t/m %s", start.isoformat(), end.isoformat())
+
+
+def _rebuild_range(
+    conn: sqlite3.Connection,
+    start: date,
+    end: date,
+    new_customer_days: dict[str, int],
+) -> None:
     conn.execute(
         "DELETE FROM daily_metrics WHERE day BETWEEN ? AND ?",
         (start.isoformat(), end.isoformat()),
     )
 
-    model_cache: dict[str, CostModel] = {}
+    # The cost-model table holds a handful of versions: load them once and
+    # pick per day, instead of one SQL query + JSON parse per day.
+    versions = sorted(queries.cost_model_history(conn), key=lambda m: m.valid_from)
+
+    def model_for(target: date) -> CostModel:
+        chosen = versions[0]
+        for version in versions:
+            if version.valid_from <= target:
+                chosen = version
+            else:
+                break
+        return chosen
+
     day = start
     while day <= end:
         iso = day.isoformat()
-        if iso not in model_cache:
-            model_cache[iso] = queries.cost_model_for(conn, day)
-        cost_model = model_cache[iso]
+        cost_model = model_for(day)
 
         orders = conn.execute(
             "SELECT * FROM orders WHERE order_day = ? AND status = 'paid'", (iso,)
@@ -379,6 +414,3 @@ def rebuild_daily_metrics(conn: sqlite3.Connection, start: date, end: date) -> N
             ),
         )
         day += timedelta(days=1)
-
-    conn.commit()
-    logger.info("Dagcijfers herbouwd: %s t/m %s", start.isoformat(), end.isoformat())

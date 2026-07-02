@@ -77,7 +77,10 @@ def parse_eur_to_cents(value: str | float | int | None) -> int | None:
 
     The one conversion used by every adapter and the CSV importer, so
     rounding can never drift between sources. None/empty stays None.
-    Halves round away from zero ('1.005' → 101 cents).
+    Halves round away from zero ('29,955' → 2996 cents). Note that a
+    dotted group of three WITHOUT a comma ('1.005') reads as Dutch
+    thousands (€ 1005) — machine amounts where the dot is always a
+    decimal point go through api_amount_to_cents instead.
     """
     if value is None:
         return None
@@ -101,6 +104,29 @@ def parse_eur_to_cents(value: str | float | int | None) -> int | None:
     if len(decimals) > 2 and decimals[2] >= "5":
         cents += 1
     return -cents if negative else cents
+
+
+def parse_nl_number(value: str | float | int | None) -> float | None:
+    """Parse a human-typed number ('1,05', '2.500', '1.234,5') to a float.
+
+    Same Dutch comma/thousands rules as parse_eur_to_cents, but for bare
+    numbers (thresholds, factors) instead of money. None/empty stays None.
+    """
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = value.strip().replace(" ", "")
+    if not text:
+        return None
+    negative = text.startswith("-")
+    text = text.lstrip("+-")
+    if "," in text:
+        text = text.replace(".", "").replace(",", ".")
+    elif _THOUSANDS_RE.match(text) and not text.startswith("0."):
+        text = text.replace(".", "")
+    number = float(text)
+    return -number if negative else number
 
 
 def api_amount_to_cents(value: str | float | int | None) -> int | None:

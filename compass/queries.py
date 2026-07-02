@@ -138,10 +138,6 @@ def cost_model_for(conn: sqlite3.Connection, day: date) -> CostModel | None:
     return _row_to_cost_model(row) if row else None
 
 
-def current_cost_model(conn: sqlite3.Connection, today: date) -> CostModel | None:
-    return cost_model_for(conn, today)
-
-
 def cost_model_history(conn: sqlite3.Connection) -> list[CostModel]:
     rows = conn.execute("SELECT * FROM cost_model ORDER BY valid_from DESC").fetchall()
     return [_row_to_cost_model(row) for row in rows]
@@ -479,7 +475,3 @@ def data_bounds(conn: sqlite3.Connection) -> tuple[date, date] | None:
     if row["lo"] is None:
         return None
     return date.fromisoformat(row["lo"]), date.fromisoformat(row["hi"])
-
-
-def orders_exist(conn: sqlite3.Connection) -> bool:
-    return conn.execute("SELECT EXISTS (SELECT 1 FROM orders)").fetchone()[0] == 1

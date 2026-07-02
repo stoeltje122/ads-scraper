@@ -190,41 +190,50 @@ def _retry_after_seconds(resp: httpx.Response) -> float:
         return DEFAULT_RETRY_AFTER_SECONDS
 
 
-def _is_cancelled(item: dict[str, Any], quantity: int) -> bool:
-    """Cancelled either by a pending request or an executed cancellation."""
+def _cancelled_quantity(item: dict[str, Any], quantity: int) -> int:
+    """Units of this line that are (or are about to be) cancelled.
+
+    A pending cancellationRequest counts as the whole line (conservative:
+    bol honours nearly all of them); otherwise the executed
+    quantityCancelled, capped at the line quantity."""
     if item.get("cancellationRequest"):
-        return True
+        return quantity
     cancelled = item.get("quantityCancelled")
-    return cancelled is not None and quantity > 0 and int(cancelled) == quantity
+    if not cancelled:
+        return 0
+    return min(int(cancelled), quantity)
 
 
 def parse_order_detail(detail: dict[str, Any]) -> OrderRecord:
     """Normalize one /retailer/orders/{orderId} response into an OrderRecord.
 
-    bol has no refunds endpoint here; cancellations are the equivalent:
-    cancelled items are excluded from gross and units, and a fully
-    cancelled order becomes status 'refunded' while keeping its original
-    total (the row stays meaningful; the status already zeroes the margin
-    and excludes it from revenue). bol masks buyer identity and splits no
-    VAT: customer_hash/net/vat stay None — the cost model derives the VAT
-    and an unidentifiable customer deliberately counts as new.
+    bol has no refunds endpoint here; cancellations are its refunds, and
+    they map onto the same columns Shopify uses so gross/refunded mean the
+    same thing on every channel: gross_cents keeps the ORIGINAL order
+    total (matches the bol seller console), the cancelled value goes into
+    refunded_cents (partial cancellations included), and units counts only
+    the kept units — COGS is charged per shipped unit. A fully cancelled
+    order becomes status 'refunded' with its original units. bol masks
+    buyer identity and splits no VAT: customer_hash/net/vat stay None —
+    the cost model derives the VAT and an unidentifiable customer
+    deliberately counts as new.
     """
     gross_all = units_all = 0
-    gross_kept = units_kept = 0
+    cancelled_value = units_kept = 0
     for item in detail.get("orderItems") or []:
         quantity = int(item.get("quantity") or 0)
-        line_cents = (api_amount_to_cents(item.get("unitPrice")) or 0) * quantity
-        gross_all += line_cents
+        unit_cents = api_amount_to_cents(item.get("unitPrice")) or 0
+        cancelled = _cancelled_quantity(item, quantity)
+        gross_all += unit_cents * quantity
         units_all += quantity
-        if _is_cancelled(item, quantity):
-            continue
-        gross_kept += line_cents
-        units_kept += quantity
+        cancelled_value += unit_cents * cancelled
+        units_kept += quantity - cancelled
 
     if units_all and units_kept == 0:
-        status, gross, units = "refunded", gross_all, units_all
+        status, units = "refunded", units_all
     else:
-        status, gross, units = "paid", gross_kept, units_kept
+        status, units = "paid", units_kept
+    gross = gross_all
 
     return OrderRecord(
         extern_id=str(detail["orderId"]),
@@ -238,7 +247,7 @@ def parse_order_detail(detail: dict[str, Any]) -> OrderRecord:
         is_new_customer=None,
         payment_method=None,  # bol collects payment; its commission is the cost
         status=status,
-        refunded_cents=0,
+        refunded_cents=cancelled_value,
         raw=scrub_raw(detail),
     )
 

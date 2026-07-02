@@ -485,6 +485,9 @@ Dat is **normaal en geen bug**. Meta telt aankopen toe aan advertenties volgens 
 **"database is locked"**
 SQLite laat maar één schrijver tegelijk toe. Dit gebeurt vrijwel alleen als het dashboard openstaat terwijl `compass collect` draait. Oplossing: dashboard sluiten (Ctrl+C) en het commando **gewoon opnieuw draaien**. Er gaat niets verloren.
 
+**`pip list` toont zowel "adscout" als "cloudplunge-tools"**
+Op computers waar AdScout al stond, kan de oude registratie "adscout 0.1.0" blijven staan naast de nieuwe "cloudplunge-tools" (die beide tools bevat). Dat is onschuldig — maar draai **nooit** `pip uninstall adscout`: dat verwijdert dan ook het `adscout`-commando dat de nieuwe installatie gebruikt. Gebeurt dat toch per ongeluk, dan herstelt `pip install -e .` alles weer.
+
 **Waar staan de logs?**
 - `logs/compass.log` — alles wat Compass doet, met detail (roteert vanzelf).
 - `logs/cron-compass.log` — de output van de geplande dagelijkse runs (route a uit sectie 7).

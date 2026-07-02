@@ -21,7 +21,7 @@ from datetime import date, timedelta
 from typing import Any, Callable
 
 from compass import metrics, queries, store
-from compass.models import Signal, fmt_eur
+from compass.models import parse_nl_number, Signal, fmt_eur
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,9 @@ def get_thresholds(conn: sqlite3.Connection) -> dict[str, float]:
         if raw is None:
             continue
         try:
-            parsed = float(str(raw).strip().replace(",", "."))
+            parsed = parse_nl_number(str(raw))
+            if parsed is None:
+                raise ValueError(raw)
         except ValueError:
             logger.warning(
                 "Ongeldige drempelwaarde voor signal.%s: %r — standaard %s gebruikt",
@@ -80,13 +82,17 @@ def get_thresholds(conn: sqlite3.Connection) -> dict[str, float]:
 # ── Dutch number formatting (messages only; money goes through fmt_eur) ──
 
 
-def _fmt_ratio(value: float, decimals: int = 2) -> str:
+def _fmt_ratio(value: float | None, decimals: int = 2) -> str:
     """Fixed decimals with a Dutch comma: 2.408 → '2,41'."""
+    if value is None:
+        return "—"
     return f"{value:.{decimals}f}".replace(".", ",")
 
 
-def _fmt_num(value: float) -> str:
+def _fmt_num(value: float | None) -> str:
     """Trim trailing zeros, Dutch comma: 2.0 → '2', 1.3 → '1,3'."""
+    if value is None:
+        return "—"
     return f"{value:g}".replace(".", ",")
 
 
@@ -176,7 +182,7 @@ def evaluate(conn: sqlite3.Connection, today: date) -> list[Signal]:
     yesterday = today - timedelta(days=1)
     fired: list[Signal] = []
 
-    cost_model = queries.current_cost_model(conn, today)
+    cost_model = queries.cost_model_for(conn, today)
 
     # Stock state is shared: it is both the reorder trigger and the
     # scale-up guard (never advise more budget than the shelf can carry).
@@ -190,7 +196,7 @@ def evaluate(conn: sqlite3.Connection, today: date) -> list[Signal]:
         else None
     )
     threshold_days = (
-        cost_model.lead_time_days * cost_model.safety_factor
+        metrics.reorder_threshold_days(cost_model.lead_time_days, cost_model.safety_factor)
         if cost_model is not None
         else None
     )

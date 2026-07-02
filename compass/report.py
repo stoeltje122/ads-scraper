@@ -279,7 +279,7 @@ def build_weekly_markdown(conn: sqlite3.Connection, today: date | None = None) -
     add("## Voorraad")
     add("")
     inventory = queries.latest_inventory(conn)
-    cost_model = queries.current_cost_model(conn, today)
+    cost_model = queries.cost_model_for(conn, today)
     rate = metrics.weighted_daily_sales(
         queries.units_sold_by_day(conn, today - timedelta(days=30), end)
     )
@@ -333,7 +333,9 @@ def build_weekly_markdown(conn: sqlite3.Connection, today: date | None = None) -
 def _threshold_days(cost_model: CostModel | None) -> float | None:
     if cost_model is None:
         return None
-    return cost_model.lead_time_days * cost_model.safety_factor
+    return metrics.reorder_threshold_days(
+        cost_model.lead_time_days, cost_model.safety_factor
+    )
 
 
 def _footer(add) -> None:

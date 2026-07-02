@@ -19,7 +19,10 @@ from compass.sources.bol import parse_order_detail
 from compass.sources.meta_insights import parse_insight_row
 from compass.sources.shopify import parse_order
 
-DEFAULT_FIXTURE_DIR = Path("tests/fixtures/compass")
+# Anchored on this file, not the cwd: `compass verify` must find the
+# bundled fixtures from any working directory (editable install from a
+# git checkout — the family's install path).
+DEFAULT_FIXTURE_DIR = Path(__file__).resolve().parents[2] / "tests" / "fixtures" / "compass"
 
 _FIXTURE_LINE = "Dit is demo-data (fixture) — geen echte cijfers."
 

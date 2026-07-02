@@ -87,14 +87,21 @@ def _num_text(value: float) -> str:
 
 
 def _eur_text(cents: int) -> str:
-    """Bare Dutch amount for prompt defaults: 650 → '6,50'."""
-    return f"{cents // 100},{cents % 100:02d}"
+    """Bare Dutch amount for prompt defaults: 650 → '6,50'.
+
+    divmod on abs(): floor division on a negative amount would render
+    -601 as '-7,99' and corrupt the round-trip through the prompt."""
+    sign = "-" if cents < 0 else ""
+    euros, rest = divmod(abs(cents), 100)
+    return f"{sign}{euros},{rest:02d}"
 
 
 def _break_even_line(conn: sqlite3.Connection, today: date, prefix: str) -> str:
-    """Break-even ROAS over the last 30 days of real data (the same
-    window the dashboard uses); '—' until there are orders."""
-    totals = queries.window_totals(conn, today - timedelta(days=29), today)
+    """Break-even ROAS over the last 30 COMPLETE days (the same window
+    the dashboard uses — today is partial); '—' until there are orders."""
+    totals = queries.window_totals(
+        conn, today - timedelta(days=30), today - timedelta(days=1)
+    )
     be_roas = totals.break_even_roas
     if be_roas is None:
         return f"{prefix}: — (nog geen omzetdata in de laatste 30 dagen)"
@@ -171,13 +178,15 @@ def _run_collect(kind: str, days: int, verbose: bool) -> None:
     settings, conn = _boot(verbose=verbose)
     today = ams_today()
 
-    if queries.cost_model_for(conn, today) is None:
-        typer.secho(collector.NO_COST_MODEL_ERROR, fg="red")
-        raise typer.Exit(2)
-
     result = collector.collect(
         conn, settings, since=today - timedelta(days=days), kind=kind
     )
+    # The collector refuses without a cost model but still records the
+    # refusal in the runs audit trail — a broken cron stays visible in
+    # `compass status` instead of only in a log nobody reads.
+    if collector.NO_COST_MODEL_ERROR in result.errors:
+        typer.secho(collector.NO_COST_MODEL_ERROR, fg="red")
+        raise typer.Exit(2)
 
     typer.echo(f"Run #{result.run_id} — {result.started_at} → {result.finished_at}")
     for source_result in result.sources:
@@ -241,7 +250,7 @@ def backfill(
 
 
 def _show_costs(conn: sqlite3.Connection, today: date) -> None:
-    model = queries.current_cost_model(conn, today)
+    model = queries.cost_model_for(conn, today)
     if model is None:
         typer.echo("Nog geen kostenmodel — draai `compass init` of `compass costs set`.")
         return
@@ -359,7 +368,7 @@ def costs_set(
         typer.secho(f"Ongeldige datum {vanaf!r} — gebruik JJJJ-MM-DD.", fg="red")
         raise typer.Exit(1)
 
-    current = queries.current_cost_model(conn, today) or costs_defaults()
+    current = queries.cost_model_for(conn, today) or costs_defaults()
     typer.echo(
         "Nieuwe kostenmodel-versie. Bedragen op z'n Nederlands (bijv. 6,50), "
         "percentages als procenten (bijv. 12,4). Enter = huidige waarde."
@@ -513,7 +522,7 @@ def status() -> None:
     n_active = len(queries.active_signals(conn))
     typer.echo(f"Actieve signalen: {n_active}" + (" (zie dashboard)" if n_active else ""))
 
-    model = queries.current_cost_model(conn, today)
+    model = queries.cost_model_for(conn, today)
     if model is None:
         typer.secho(
             "Kostenmodel: ontbreekt — draai `compass init` of `compass costs set`.",

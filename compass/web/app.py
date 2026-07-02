@@ -35,6 +35,7 @@ from compass.models import (
     ams_today,
     fmt_eur,
     parse_eur_to_cents,
+    parse_nl_number,
 )
 from compass.web import chart
 
@@ -342,7 +343,6 @@ def create_app(settings: Settings | None = None, demo: bool = False) -> FastAPI:
         NO_BOOKKEEPING=NO_BOOKKEEPING,
         demo=demo,
     )
-    templates.env.filters["day"] = lambda v: (v or "")[:10]
 
     db_path = settings.demo_db_path if demo else settings.db_path
 
@@ -500,7 +500,7 @@ def create_app(settings: Settings | None = None, demo: bool = False) -> FastAPI:
             )
         be = window.break_even_roas
         # Display edge: the break-even ratio expressed as euros-per-euro.
-        be_eur = fmt_eur(int(be * 100 + 0.5)) if be is not None else None
+        be_eur = fmt_eur(parse_eur_to_cents(be)) if be is not None else None
         return render(
             request,
             conn,
@@ -526,7 +526,7 @@ def create_app(settings: Settings | None = None, demo: bool = False) -> FastAPI:
                 conn, today - timedelta(days=30), today - timedelta(days=1)
             )
         )
-        cost_model = queries.current_cost_model(conn, today)
+        cost_model = queries.cost_model_for(conn, today)
         days_left = (
             metrics.days_of_stock(inventory.units, sales_rate)
             if inventory is not None
@@ -537,7 +537,9 @@ def create_app(settings: Settings | None = None, demo: bool = False) -> FastAPI:
             reorder_units = metrics.reorder_point_units(
                 sales_rate, cost_model.lead_time_days, cost_model.safety_factor
             )
-            threshold_days = cost_model.lead_time_days * cost_model.safety_factor
+            threshold_days = metrics.reorder_threshold_days(
+                cost_model.lead_time_days, cost_model.safety_factor
+            )
         sellout = metrics.sellout_day(today, days_left)
 
         if inventory is None:
@@ -670,7 +672,7 @@ def create_app(settings: Settings | None = None, demo: bool = False) -> FastAPI:
             {
                 "nav": "instellingen",
                 "today": today,
-                "cost_model": queries.current_cost_model(conn, today),
+                "cost_model": queries.cost_model_for(conn, today),
                 "history": queries.cost_model_history(conn),
                 "break_even_30d": month_window.break_even_roas,
                 "thresholds": signals.get_thresholds(conn),
@@ -686,6 +688,26 @@ def create_app(settings: Settings | None = None, demo: bool = False) -> FastAPI:
     ):
         form = await request.form()
         today = ams_today()
+        # Cleared fields fall back to the CURRENT model, not to 0: an empty
+        # 'Btw %' silently becoming 0% would overstate every margin ~9%.
+        current = queries.cost_model_for(conn, today)
+
+        def eur_field(name: str, fallback: int) -> int:
+            cents = parse_eur_to_cents(str(form.get(name) or ""))
+            cents = fallback if cents is None else cents
+            if cents < 0:
+                raise ValueError(f"{name} mag niet negatief zijn")
+            return cents
+
+        def pct_field(name: str, fallback: float) -> float:
+            text = str(form.get(name) or "").strip()
+            if not text:
+                return fallback
+            fraction = _parse_pct(text)
+            if fraction < 0:
+                raise ValueError(f"{name} mag niet negatief zijn")
+            return fraction
+
         try:
             payment_fees: dict[str, PaymentFee] = {}
             for i in range(1, 5):
@@ -693,22 +715,30 @@ def create_app(settings: Settings | None = None, demo: bool = False) -> FastAPI:
                 if not method:
                     continue
                 payment_fees[method] = PaymentFee(
-                    pct=_parse_pct(form.get(f"pf_pct_{i}")),
-                    fixed_cents=parse_eur_to_cents(str(form.get(f"pf_fixed_{i}") or "")) or 0,
+                    pct=pct_field(f"pf_pct_{i}", 0.0),
+                    fixed_cents=eur_field(f"pf_fixed_{i}", 0),
                 )
             valid_raw = str(form.get("valid_from") or "").strip()
             cm = CostModel(
                 valid_from=date.fromisoformat(valid_raw) if valid_raw else today,
-                cogs_per_unit_cents=parse_eur_to_cents(str(form.get("cogs_eur") or "")) or 0,
-                shipping_per_order_cents=parse_eur_to_cents(str(form.get("shipping_eur") or ""))
-                or 0,
-                fee_pct=_parse_pct(form.get("fee_pct")),
-                fee_fixed_cents=parse_eur_to_cents(str(form.get("fee_fixed_eur") or "")) or 0,
+                cogs_per_unit_cents=eur_field(
+                    "cogs_eur", current.cogs_per_unit_cents if current else 0
+                ),
+                shipping_per_order_cents=eur_field(
+                    "shipping_eur", current.shipping_per_order_cents if current else 0
+                ),
+                fee_pct=pct_field("fee_pct", current.fee_pct if current else 0.0),
+                fee_fixed_cents=eur_field(
+                    "fee_fixed_eur", current.fee_fixed_cents if current else 0
+                ),
                 payment_fees=payment_fees,
-                bol_commission_pct=_parse_pct(form.get("bol_commission_pct")),
-                vat_rate=_parse_pct(form.get("vat_pct")),
-                fixed_month_cents=parse_eur_to_cents(str(form.get("fixed_month_eur") or ""))
-                or 0,
+                bol_commission_pct=pct_field(
+                    "bol_commission_pct", current.bol_commission_pct if current else 0.0
+                ),
+                vat_rate=pct_field("vat_pct", current.vat_rate if current else 0.09),
+                fixed_month_cents=eur_field(
+                    "fixed_month_eur", current.fixed_month_cents if current else 0
+                ),
                 lead_time_days=int(str(form.get("lead_time_days") or "30").strip() or 30),
                 safety_factor=_parse_float(form.get("safety_factor"), default=1.3),
                 note=str(form.get("note") or "").strip() or None,
@@ -731,11 +761,15 @@ def create_app(settings: Settings | None = None, demo: bool = False) -> FastAPI:
             raw = str(form.get(key) or "").strip()
             if not raw:
                 continue
+            # parse_nl_number understands Dutch thousands dots ('2.500' =
+            # 2500, not 2,5) — the same parser get_thresholds reads with.
             try:
-                _parse_float(raw)
+                parsed = parse_nl_number(raw)
             except ValueError:
                 continue  # soft: a typo never breaks the other thresholds
-            store.set_setting(conn, f"signal.{key}", raw)
+            if parsed is None or parsed < 0:
+                continue
+            store.set_setting(conn, f"signal.{key}", str(parsed))
         return RedirectResponse("/instellingen", status_code=303)
 
     return app

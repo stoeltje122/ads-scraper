@@ -155,12 +155,15 @@ def test_parse_two_unit_order_multiplies_unit_price():
     assert rec.status == "paid"
 
 
-def test_parse_cancelled_item_next_to_kept_item_is_excluded():
-    # Item 2 has a pending cancellationRequest: it must not count in
-    # gross or units while the order itself stays paid.
+def test_parse_cancelled_item_next_to_kept_item_moves_to_refunded():
+    # Item 2 has a pending cancellationRequest: the ORIGINAL total stays in
+    # gross (matches the bol console), the cancelled value moves to
+    # refunded_cents (same semantics as a Shopify refund) and only the
+    # kept unit counts for COGS.
     rec = parse_order_detail(fixture_detail("2550001003"))
 
-    assert rec.gross_cents == 2995
+    assert rec.gross_cents == 5990
+    assert rec.refunded_cents == 2995
     assert rec.units == 1
     assert rec.status == "paid"
 
@@ -172,6 +175,7 @@ def test_parse_fully_cancelled_order_is_refunded_with_original_total():
 
     assert rec.status == "refunded"
     assert rec.gross_cents == 2995
+    assert rec.refunded_cents == 2995
     assert rec.units == 1
 
 
@@ -183,12 +187,13 @@ def test_parse_all_items_cancelled_via_request_is_refunded_too():
 
     assert rec.status == "refunded"
     assert rec.gross_cents == 5990  # original two-unit total kept
+    assert rec.refunded_cents == 5990
     assert rec.units == 2
 
 
-def test_parse_partially_cancelled_quantity_keeps_the_item():
-    # Only quantityCancelled == quantity excludes an item; a smaller number
-    # is not a full cancellation and the line keeps counting.
+def test_parse_partially_cancelled_quantity_refunds_that_unit():
+    # 1 of 2 units cancelled: bol never pays that unit out, so its value
+    # belongs in refunded_cents and its COGS must not be charged.
     detail = fixture_detail("2550001002")
     detail["orderItems"][0]["quantityCancelled"] = 1
 
@@ -196,7 +201,8 @@ def test_parse_partially_cancelled_quantity_keeps_the_item():
 
     assert rec.status == "paid"
     assert rec.gross_cents == 5990
-    assert rec.units == 2
+    assert rec.refunded_cents == 2995
+    assert rec.units == 1
 
 
 # ── OAuth token flow ─────────────────────────────────────────────────
