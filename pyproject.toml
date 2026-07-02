@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "adscout"
-version = "0.1.0"
-description = "AdScout — Meta Ads competitive intelligence for Cloudplunge (internal tool)"
+name = "cloudplunge-tools"
+version = "0.2.0"
+description = "Cloudplunge internal tools: AdScout (Meta Ads competitive intelligence) + Compass (finance & scaling dashboard)"
 requires-python = ">=3.11"
 dependencies = [
     "httpx==0.28.1",
@@ -16,6 +16,8 @@ dependencies = [
     "PyYAML==6.0.3",
     "python-dotenv==1.2.2",
     "python-multipart==0.0.32",
+    # Windows has no system timezone database; Compass needs Europe/Amsterdam.
+    'tzdata==2025.2 ; platform_system == "Windows"',
 ]
 
 [project.optional-dependencies]
@@ -24,12 +26,14 @@ ai = ["anthropic>=0.40,<1.0"]
 
 [project.scripts]
 adscout = "adscout.cli:main"
+compass = "compass.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["adscout*"]
+include = ["adscout*", "compass*"]
 
 [tool.setuptools.package-data]
 adscout = ["migrations/*.sql", "web/templates/**/*.html", "web/static/*"]
+compass = ["migrations/*.sql", "web/templates/**/*.html", "web/static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
