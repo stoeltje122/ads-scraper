@@ -8,10 +8,10 @@ from compass.db import open_db
 from compass.models import ams_day, customer_hash, fmt_eur
 
 
-def test_migrations_create_all_tables(tmp_db):
+def test_migrations_create_all_tables(compass_db):
     tables = {
         row["name"]
-        for row in tmp_db.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        for row in compass_db.execute("SELECT name FROM sqlite_master WHERE type='table'")
     }
     assert {
         "orders", "ad_spend_daily", "cost_model", "inventory_snapshots",

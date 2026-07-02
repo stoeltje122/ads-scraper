@@ -1,7 +1,9 @@
-"""Shared pytest fixtures for the AdScout test suite.
+"""Shared pytest fixtures for the AdScout and Compass test suites.
 
 All tests are offline and isolated: the environment is scrubbed so a
 developer's .env / data/ directory can never leak into a test run.
+Compass tests live flat in this directory as test_compass_*.py (pytest
+needs unique basenames) and use the compass_db fixture.
 """
 
 from __future__ import annotations
@@ -42,12 +44,20 @@ CATEGORIES = {
 def _isolated_env(monkeypatch, tmp_path):
     """Never touch the repo's real data/ dir or a developer's .env."""
     monkeypatch.setenv("ADSCOUT_DATA_DIR", str(tmp_path / "adscout-data"))
+    monkeypatch.setenv("COMPASS_DATA_DIR", str(tmp_path / "compass-data"))
     for var in (
         "META_ACCESS_TOKEN",
         "META_GRAPH_VERSION",
         "ANTHROPIC_API_KEY",
         "ANTHROPIC_MODEL",
         "ADSCOUT_DEFAULT_COUNTRIES",
+        # Compass sources
+        "SHOPIFY_SHOP",
+        "SHOPIFY_ACCESS_TOKEN",
+        "SHOPIFY_API_VERSION",
+        "META_AD_ACCOUNT_ID",
+        "BOL_CLIENT_ID",
+        "BOL_CLIENT_SECRET",
     ):
         monkeypatch.delenv(var, raising=False)
 
@@ -56,6 +66,16 @@ def _isolated_env(monkeypatch, tmp_path):
 def tmp_db(tmp_path) -> sqlite3.Connection:
     """A fresh, fully migrated database in a temporary directory."""
     conn = open_db(tmp_path / "test-adscout.db")
+    yield conn
+    conn.close()
+
+
+@pytest.fixture
+def compass_db(tmp_path) -> sqlite3.Connection:
+    """A fresh, fully migrated *Compass* database in a temporary directory."""
+    from compass.db import open_db as compass_open_db
+
+    conn = compass_open_db(tmp_path / "test-compass.db")
     yield conn
     conn.close()
 
